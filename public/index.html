@@ -3,20 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DSA Mastery Engine | Executive Single-Page Dashboard</title>
+    <title>DSA Mastery Engine | AI Coach Dashboard</title>
 
-    <!-- Google Fonts: Inter & JetBrains Mono -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
 
-    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
-    <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <!-- Canvas Confetti -->
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     
     <script>
@@ -62,107 +57,142 @@
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
         }
 
-        .glass-card-hover {
-            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-
-        .glass-card-hover:hover {
-            border-color: rgba(16, 185, 129, 0.35);
-            box-shadow: 0 12px 30px -10px rgba(16, 185, 129, 0.2);
-        }
-
-        .kanban-column {
-            min-height: 480px;
-            background: rgba(18, 18, 21, 0.6);
-            border: 1px solid rgba(255, 255, 255, 0.05);
-        }
+        .glass-card-hover { transition: all 0.2s ease; }
+        .glass-card-hover:hover { border-color: rgba(16, 185, 129, 0.35); box-shadow: 0 12px 30px -10px rgba(16, 185, 129, 0.2); }
+        .kanban-column { min-height: 480px; background: rgba(18, 18, 21, 0.6); border: 1px solid rgba(255, 255, 255, 0.05); }
 
         ::-webkit-scrollbar { width: 6px; height: 6px; }
         ::-webkit-scrollbar-track { background: #09090b; }
         ::-webkit-scrollbar-thumb { background: #27272a; border-radius: 9999px; }
-        ::-webkit-scrollbar-thumb:hover { background: #3f3f46; }
     </style>
 </head>
 
 <body class="min-h-screen pb-20 flex flex-col font-sans">
 
-    <!-- AUTHENTICATION OVERLAY -->
-    <div id="auth-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-obsidian-950/95 backdrop-blur-2xl transition-all duration-300">
-        <div class="glass-card p-8 rounded-3xl w-full max-w-md shadow-2xl border border-emerald-500/20 relative overflow-hidden">
+    <!-- AUTH OVERLAY -->
+    <div id="auth-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-obsidian-950/95 backdrop-blur-2xl">
+        <div class="glass-card p-8 rounded-3xl w-full max-w-md shadow-2xl border border-emerald-500/20">
             <div class="flex items-center gap-3.5 mb-6">
-                <div class="p-3 bg-gradient-to-tr from-emerald-500 to-cyan-500 rounded-2xl text-black shadow-lg shadow-emerald-500/20">
-                    <i data-lucide="terminal" class="w-6 h-6"></i>
+                <div class="p-3 bg-gradient-to-tr from-emerald-500 to-cyan-500 rounded-2xl text-black shadow-lg">
+                    <i data-lucide="bot" class="w-6 h-6"></i>
                 </div>
                 <div>
-                    <h2 id="auth-title" class="text-xl font-extrabold text-white tracking-tight">DSA MASTERY ENGINE</h2>
-                    <p class="text-xs text-slate-400 mt-0.5">Continuous Execution Dashboard</p>
+                    <h2 id="auth-title" class="text-xl font-extrabold text-white">DSA AI COACH ENGINE</h2>
+                    <p class="text-xs text-slate-400">Adaptive Practice & Study Reminders</p>
                 </div>
             </div>
 
             <form onsubmit="handleAuth(event)" class="space-y-4">
                 <div id="name-field" class="hidden space-y-1">
-                    <label class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Full Name</label>
-                    <input type="text" id="auth-name" placeholder="Alex Chen" class="w-full bg-obsidian-900 border border-obsidian-700 rounded-xl px-4 py-2.5 text-sm text-slate-100 placeholder-slate-600 outline-none focus:border-emerald-500 transition">
+                    <label class="text-[11px] font-bold text-slate-400 uppercase">Full Name</label>
+                    <input type="text" id="auth-name" placeholder="Alex Chen" class="w-full bg-obsidian-900 border border-obsidian-700 rounded-xl px-4 py-2.5 text-sm text-slate-100 outline-none focus:border-emerald-500">
                 </div>
                 <div class="space-y-1">
-                    <label class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Email Address</label>
-                    <input type="email" id="auth-email" required placeholder="alex@domain.com" class="w-full bg-obsidian-900 border border-obsidian-700 rounded-xl px-4 py-2.5 text-sm text-slate-100 placeholder-slate-600 outline-none focus:border-emerald-500 transition">
+                    <label class="text-[11px] font-bold text-slate-400 uppercase">Email Address</label>
+                    <input type="email" id="auth-email" required placeholder="alex@domain.com" class="w-full bg-obsidian-900 border border-obsidian-700 rounded-xl px-4 py-2.5 text-sm text-slate-100 outline-none focus:border-emerald-500">
                 </div>
                 <div class="space-y-1">
-                    <label class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Password</label>
-                    <input type="password" id="auth-password" required placeholder="••••••••" class="w-full bg-obsidian-900 border border-obsidian-700 rounded-xl px-4 py-2.5 text-sm text-slate-100 placeholder-slate-600 outline-none focus:border-emerald-500 transition">
+                    <label class="text-[11px] font-bold text-slate-400 uppercase">Password</label>
+                    <input type="password" id="auth-password" required placeholder="••••••••" class="w-full bg-obsidian-900 border border-obsidian-700 rounded-xl px-4 py-2.5 text-sm text-slate-100 outline-none focus:border-emerald-500">
                 </div>
-                <div id="auth-error" class="text-xs text-rose-400 font-medium hidden bg-rose-500/10 border border-rose-500/20 p-2.5 rounded-xl"></div>
-                <button type="submit" id="auth-submit-btn" class="w-full bg-gradient-to-r from-emerald-500 to-cyan-500 hover:opacity-95 text-black font-extrabold py-3 rounded-xl transition text-sm shadow-lg shadow-emerald-500/20 flex items-center justify-center gap-2">
+                <div id="auth-error" class="text-xs text-rose-400 hidden bg-rose-500/10 border border-rose-500/20 p-2.5 rounded-xl"></div>
+                <button type="submit" id="auth-submit-btn" class="w-full bg-gradient-to-r from-emerald-500 to-cyan-500 text-black font-extrabold py-3 rounded-xl text-sm flex items-center justify-center gap-2">
                     <span>Sign In</span>
                     <i data-lucide="arrow-right" class="w-4 h-4"></i>
                 </button>
             </form>
 
             <div class="mt-5 text-center">
-                <button onclick="toggleAuthMode()" id="auth-toggle-btn" class="text-xs text-emerald-400 hover:text-emerald-300 transition">
+                <button onclick="toggleAuthMode()" id="auth-toggle-btn" class="text-xs text-emerald-400 hover:text-emerald-300">
                     Need an account? <span class="underline font-bold">Create Account</span>
                 </button>
             </div>
         </div>
     </div>
 
-    <!-- MAIN HEADER NAVIGATION -->
-    <header class="sticky top-0 z-40 glass-card border-b border-obsidian-800/80 px-6 py-3.5">
+    <!-- MAIN HEADER -->
+    <header class="sticky top-0 z-40 glass-card border-b border-obsidian-800 px-6 py-3.5">
         <div class="max-w-7xl mx-auto flex items-center justify-between">
             <div class="flex items-center gap-3">
                 <div class="p-2.5 bg-emerald-500/10 text-emerald-400 rounded-2xl border border-emerald-500/20">
-                    <i data-lucide="cpu" class="w-5 h-5"></i>
+                    <i data-lucide="sparkles" class="w-5 h-5"></i>
                 </div>
                 <div>
                     <div class="flex items-center gap-2">
                         <h1 class="font-black text-lg tracking-wide text-white">DSA MASTERY</h1>
-                        <span class="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">PRO HUB</span>
+                        <span class="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">AI COACH ACTIVE</span>
                     </div>
                     <p class="text-xs text-slate-400 flex items-center gap-1.5 mt-0.5">
                         <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-                        Logged in as: <span id="user-display" class="text-emerald-300 font-bold">User</span>
+                        Logged in: <span id="user-display" class="text-emerald-300 font-bold">User</span>
                     </p>
                 </div>
             </div>
 
-            <!-- Page Section Anchor Links -->
             <div class="hidden md:flex items-center gap-6 text-xs font-semibold text-slate-400">
+                <a href="#sec-coach" class="hover:text-emerald-400 transition">AI Coach</a>
                 <a href="#sec-metrics" class="hover:text-emerald-400 transition">Metrics</a>
                 <a href="#sec-analytics" class="hover:text-emerald-400 transition">Analytics</a>
                 <a href="#sec-kanban" class="hover:text-emerald-400 transition">Kanban</a>
                 <a href="#sec-table" class="hover:text-emerald-400 transition">Master List</a>
-                <a href="#sec-roadmap" class="hover:text-emerald-400 transition">Roadmap</a>
             </div>
 
-            <button onclick="logout()" class="px-3.5 py-2 text-xs font-bold bg-obsidian-900 hover:bg-obsidian-800 text-slate-300 hover:text-white rounded-xl border border-obsidian-800 transition flex items-center gap-2">
+            <button onclick="logout()" class="px-3.5 py-2 text-xs font-bold bg-obsidian-900 hover:bg-obsidian-800 text-slate-300 rounded-xl border border-obsidian-800 flex items-center gap-2">
                 <i data-lucide="log-out" class="w-3.5 h-3.5 text-slate-400"></i> Logout
             </button>
         </div>
     </header>
 
-    <!-- CONTINUOUS SINGLE-PAGE DASHBOARD -->
+    <!-- MAIN SINGLE PAGE DASHBOARD -->
     <main class="max-w-7xl mx-auto px-6 mt-8 flex-1 w-full space-y-10">
+
+        <!-- SECTION 0: AI COACH COMMAND HUB -->
+        <section id="sec-coach" class="glass-card rounded-3xl p-6 border border-emerald-500/30 bg-gradient-to-r from-emerald-950/20 via-obsidian-900 to-obsidian-900 space-y-6">
+            <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-obsidian-800 pb-4">
+                <div class="flex items-center gap-3">
+                    <div class="p-3 bg-emerald-500/20 text-emerald-400 rounded-2xl border border-emerald-500/30">
+                        <i data-lucide="bot" class="w-6 h-6"></i>
+                    </div>
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <h2 class="text-lg font-black text-white tracking-wide">AI Performance Coach & Study Briefing</h2>
+                            <span id="coach-track-badge" class="text-[10px] font-mono px-2.5 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 font-bold">Evaluating...</span>
+                        </div>
+                        <p class="text-xs text-slate-400 mt-0.5">Automated difficulty adaptation & spaced-repetition scheduler</p>
+                    </div>
+                </div>
+
+                <div class="flex items-center gap-3">
+                    <button onclick="triggerCoachEmail()" class="px-4 py-2 text-xs font-bold bg-gradient-to-r from-emerald-500 to-cyan-500 text-black rounded-xl shadow-lg shadow-emerald-500/20 hover:opacity-95 transition flex items-center gap-2">
+                        <i data-lucide="mail" class="w-4 h-4"></i> Send Email Study Plan
+                    </button>
+                </div>
+            </div>
+
+            <!-- AI Insight & Action Grid -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <!-- AI Coach Directive -->
+                <div class="glass-card p-5 rounded-2xl bg-obsidian-950/80 border border-obsidian-800 space-y-3 lg:col-span-2">
+                    <p class="text-[10px] font-bold uppercase tracking-wider text-emerald-400 flex items-center gap-1.5">
+                        <i data-lucide="zap" class="w-3.5 h-3.5"></i> Daily AI Strategy Directive
+                    </p>
+                    <p id="coach-directive" class="text-xs text-slate-200 leading-relaxed font-medium">Analyzing your progress history...</p>
+                    <p id="coach-reason" class="text-[11px] text-slate-400 italic bg-obsidian-900 p-2.5 rounded-xl border border-obsidian-800"></p>
+                </div>
+
+                <!-- Interactive Ask AI Drawer -->
+                <div class="glass-card p-5 rounded-2xl bg-obsidian-950/80 border border-obsidian-800 flex flex-col justify-between space-y-3">
+                    <p class="text-[10px] font-bold uppercase tracking-wider text-cyan-400 flex items-center gap-1.5">
+                        <i data-lucide="message-square" class="w-3.5 h-3.5"></i> Ask Your AI Coach
+                    </p>
+                    <div class="flex gap-2">
+                        <input type="text" id="ai-question" placeholder="e.g. How to master sliding window?" class="bg-obsidian-900 border border-obsidian-800 text-xs text-slate-200 rounded-xl px-3 py-2 outline-none w-full focus:border-cyan-500">
+                        <button onclick="askAiCoach()" class="px-3 py-2 bg-cyan-500 text-black font-bold text-xs rounded-xl hover:bg-cyan-400 shrink-0">Ask</button>
+                    </div>
+                    <p id="ai-answer" class="text-[11px] text-slate-300 hidden bg-obsidian-900 p-2.5 rounded-xl border border-obsidian-800 max-h-24 overflow-y-auto"></p>
+                </div>
+            </div>
+        </section>
 
         <!-- SECTION 1: TOP METRICS OVERVIEW -->
         <section id="sec-metrics" class="space-y-4">
@@ -177,7 +207,6 @@
                             <i data-lucide="layers" class="w-6 h-6"></i>
                         </div>
                     </div>
-                    <p class="text-[11px] text-slate-400 mt-4 font-medium">Pre-loaded LeetCode problem set</p>
                 </div>
 
                 <div class="glass-card p-6 rounded-3xl relative overflow-hidden glass-card-hover">
@@ -208,7 +237,6 @@
                             <i data-lucide="award" class="w-6 h-6"></i>
                         </div>
                     </div>
-                    <p class="text-[11px] text-indigo-300/70 mt-4 font-medium">5/5 Revisions Completed</p>
                 </div>
 
                 <div class="glass-card p-6 rounded-3xl relative overflow-hidden glass-card-hover">
@@ -221,12 +249,11 @@
                             <i data-lucide="clock" class="w-6 h-6"></i>
                         </div>
                     </div>
-                    <p class="text-[11px] text-amber-300/70 mt-4 font-medium">Spaced repetition schedule</p>
                 </div>
             </div>
         </section>
 
-        <!-- SECTION 2: CHARTS & ANALYTICS (COLLAPSIBLE) -->
+        <!-- SECTION 2: CHARTS & ANALYTICS -->
         <section id="sec-analytics" class="glass-card rounded-3xl p-6 space-y-6">
             <div class="flex items-center justify-between cursor-pointer border-b border-obsidian-800 pb-4" onclick="toggleSection('body-analytics', 'icon-analytics')">
                 <div class="flex items-center gap-3">
@@ -260,7 +287,7 @@
             </div>
         </section>
 
-        <!-- SECTION 3: KANBAN BOARD (COLLAPSIBLE) -->
+        <!-- SECTION 3: KANBAN BOARD -->
         <section id="sec-kanban" class="glass-card rounded-3xl p-6 space-y-6">
             <div class="flex items-center justify-between cursor-pointer border-b border-obsidian-800 pb-4" onclick="toggleSection('body-kanban', 'icon-kanban')">
                 <div class="flex items-center gap-3">
@@ -278,53 +305,41 @@
             </div>
 
             <div id="body-kanban" class="grid grid-cols-1 md:grid-cols-4 gap-5 pt-2">
-                <!-- Column 1: Todo -->
                 <div class="kanban-column rounded-2xl p-4 flex flex-col space-y-3" ondragover="allowDrop(event)" ondrop="handleDrop(event, 'Todo')">
                     <div class="flex justify-between items-center pb-2 border-b border-obsidian-800">
-                        <span class="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-2">
-                            <span class="w-2 h-2 rounded-full bg-slate-500"></span> Todo
-                        </span>
-                        <span id="kanban-count-todo" class="text-xs font-mono font-bold px-2 py-0.5 rounded-full bg-obsidian-900 text-slate-400 border border-obsidian-800">0</span>
+                        <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Todo</span>
+                        <span id="kanban-count-todo" class="text-xs font-mono font-bold px-2 py-0.5 rounded-full bg-obsidian-900 text-slate-400">0</span>
                     </div>
                     <div id="kanban-list-todo" class="space-y-3 flex-1 overflow-y-auto max-h-[600px] pr-1"></div>
                 </div>
 
-                <!-- Column 2: In Progress / Hint-Solved -->
                 <div class="kanban-column rounded-2xl p-4 flex flex-col space-y-3" ondragover="allowDrop(event)" ondrop="handleDrop(event, 'Hint-solved')">
                     <div class="flex justify-between items-center pb-2 border-b border-obsidian-800">
-                        <span class="text-xs font-bold uppercase tracking-wider text-amber-400 flex items-center gap-2">
-                            <span class="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span> Hint-Solved
-                        </span>
-                        <span id="kanban-count-hint" class="text-xs font-mono font-bold px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30">0</span>
+                        <span class="text-xs font-bold uppercase tracking-wider text-amber-400">Hint-Solved</span>
+                        <span id="kanban-count-hint" class="text-xs font-mono font-bold px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300">0</span>
                     </div>
                     <div id="kanban-list-hint" class="space-y-3 flex-1 overflow-y-auto max-h-[600px] pr-1"></div>
                 </div>
 
-                <!-- Column 3: Solved -->
                 <div class="kanban-column rounded-2xl p-4 flex flex-col space-y-3" ondragover="allowDrop(event)" ondrop="handleDrop(event, 'Solved')">
                     <div class="flex justify-between items-center pb-2 border-b border-obsidian-800">
-                        <span class="text-xs font-bold uppercase tracking-wider text-emerald-400 flex items-center gap-2">
-                            <span class="w-2 h-2 rounded-full bg-emerald-400"></span> Solved
-                        </span>
-                        <span id="kanban-count-solved" class="text-xs font-mono font-bold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">0</span>
+                        <span class="text-xs font-bold uppercase tracking-wider text-emerald-400">Solved</span>
+                        <span id="kanban-count-solved" class="text-xs font-mono font-bold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300">0</span>
                     </div>
                     <div id="kanban-list-solved" class="space-y-3 flex-1 overflow-y-auto max-h-[600px] pr-1"></div>
                 </div>
 
-                <!-- Column 4: Mastered -->
                 <div class="kanban-column rounded-2xl p-4 flex flex-col space-y-3" ondragover="allowDrop(event)" ondrop="handleDrop(event, 'Mastered')">
                     <div class="flex justify-between items-center pb-2 border-b border-obsidian-800">
-                        <span class="text-xs font-bold uppercase tracking-wider text-indigo-400 flex items-center gap-2">
-                            <span class="w-2 h-2 rounded-full bg-indigo-400"></span> Mastered
-                        </span>
-                        <span id="kanban-count-mastered" class="text-xs font-mono font-bold px-2 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">0</span>
+                        <span class="text-xs font-bold uppercase tracking-wider text-indigo-400">Mastered</span>
+                        <span id="kanban-count-mastered" class="text-xs font-mono font-bold px-2 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300">0</span>
                     </div>
                     <div id="kanban-list-mastered" class="space-y-3 flex-1 overflow-y-auto max-h-[600px] pr-1"></div>
                 </div>
             </div>
         </section>
 
-        <!-- SECTION 4: MASTER PROBLEM LIST (COLLAPSIBLE + EXPANDABLE ROWS) -->
+        <!-- SECTION 4: MASTER PROBLEM LIST -->
         <section id="sec-table" class="glass-card rounded-3xl p-6 space-y-6">
             <div class="flex items-center justify-between cursor-pointer border-b border-obsidian-800 pb-4" onclick="toggleSection('body-table', 'icon-table')">
                 <div class="flex items-center gap-3">
@@ -332,8 +347,8 @@
                         <i data-lucide="list-checks" class="w-5 h-5"></i>
                     </div>
                     <div>
-                        <h2 class="text-base font-extrabold text-white tracking-wide">Master Problem List & Spaced Repetition</h2>
-                        <p class="text-xs text-slate-400">Search, filter, click problem for LeetCode link, or click row to expand notes</p>
+                        <h2 class="text-base font-extrabold text-white tracking-wide">Master Problem List</h2>
+                        <p class="text-xs text-slate-400">Click problem to open LeetCode, or click row to expand notes</p>
                     </div>
                 </div>
                 <button class="p-2 text-slate-400 hover:text-white rounded-xl bg-obsidian-900 border border-obsidian-800">
@@ -342,24 +357,21 @@
             </div>
 
             <div id="body-table" class="space-y-4 pt-2">
-                <!-- Search & Filters Strip -->
                 <div class="flex flex-wrap gap-4 items-center justify-between bg-obsidian-900/80 p-3 rounded-2xl border border-obsidian-800">
                     <div class="flex items-center gap-3 bg-obsidian-950 border border-obsidian-800 rounded-xl px-4 py-2 flex-1 min-w-[260px]">
                         <i data-lucide="search" class="w-4 h-4 text-slate-500"></i>
-                        <input type="text" id="search-input" oninput="renderTable()" placeholder="Search problem, pattern, or note..." class="bg-transparent text-xs text-slate-100 outline-none w-full placeholder-slate-500">
+                        <input type="text" id="search-input" oninput="renderTable()" placeholder="Search problem or pattern..." class="bg-transparent text-xs text-slate-100 outline-none w-full">
                     </div>
                     <div class="flex flex-wrap gap-3">
-                        <select id="filter-topic" onchange="renderTable()" class="bg-obsidian-950 border border-obsidian-800 text-xs rounded-xl px-3 py-2 text-slate-300 outline-none focus:border-emerald-500">
-                            <option value="ALL">All Topics</option>
-                        </select>
-                        <select id="filter-status" onchange="renderTable()" class="bg-obsidian-950 border border-obsidian-800 text-xs rounded-xl px-3 py-2 text-slate-300 outline-none focus:border-emerald-500">
+                        <select id="filter-topic" onchange="renderTable()" class="bg-obsidian-950 border border-obsidian-800 text-xs rounded-xl px-3 py-2 text-slate-300 outline-none"></select>
+                        <select id="filter-status" onchange="renderTable()" class="bg-obsidian-950 border border-obsidian-800 text-xs rounded-xl px-3 py-2 text-slate-300 outline-none">
                             <option value="ALL">All Statuses</option>
                             <option value="Todo">Todo</option>
                             <option value="Hint-solved">Hint-solved</option>
                             <option value="Solved">Solved</option>
                             <option value="Mastered">Mastered</option>
                         </select>
-                        <select id="filter-diff" onchange="renderTable()" class="bg-obsidian-950 border border-obsidian-800 text-xs rounded-xl px-3 py-2 text-slate-300 outline-none focus:border-emerald-500">
+                        <select id="filter-diff" onchange="renderTable()" class="bg-obsidian-950 border border-obsidian-800 text-xs rounded-xl px-3 py-2 text-slate-300 outline-none">
                             <option value="ALL">All Difficulties</option>
                             <option value="Easy">Easy</option>
                             <option value="Medium">Medium</option>
@@ -368,14 +380,13 @@
                     </div>
                 </div>
 
-                <!-- Table -->
                 <div class="rounded-2xl overflow-hidden border border-obsidian-800">
                     <div class="overflow-x-auto">
                         <table class="w-full text-left text-xs">
                             <thead class="bg-obsidian-900 text-slate-400 uppercase font-bold border-b border-obsidian-800">
                                 <tr>
                                     <th class="p-4 w-10 text-center font-mono">#</th>
-                                    <th class="p-4">Problem Name (LeetCode Link)</th>
+                                    <th class="p-4">Problem Name</th>
                                     <th class="p-4">Topic</th>
                                     <th class="p-4">Difficulty</th>
                                     <th class="p-4">Priority</th>
@@ -392,26 +403,6 @@
             </div>
         </section>
 
-        <!-- SECTION 5: 36-WEEK ROADMAP (COLLAPSIBLE) -->
-        <section id="sec-roadmap" class="glass-card rounded-3xl p-6 space-y-6">
-            <div class="flex items-center justify-between cursor-pointer border-b border-obsidian-800 pb-4" onclick="toggleSection('body-roadmap', 'icon-roadmap')">
-                <div class="flex items-center gap-3">
-                    <div class="p-2 bg-emerald-500/10 text-emerald-400 rounded-xl">
-                        <i data-lucide="route" class="w-5 h-5"></i>
-                    </div>
-                    <div>
-                        <h2 class="text-base font-extrabold text-white tracking-wide">36-Week Structured Roadmap</h2>
-                        <p class="text-xs text-slate-400">Sequential pattern blueprint & mock contest goals</p>
-                    </div>
-                </div>
-                <button class="p-2 text-slate-400 hover:text-white rounded-xl bg-obsidian-900 border border-obsidian-800">
-                    <i data-lucide="chevron-down" id="icon-roadmap" class="w-4 h-4 transition-transform"></i>
-                </button>
-            </div>
-
-            <div id="body-roadmap" class="space-y-3 pt-2"></div>
-        </section>
-
     </main>
 
     <script>
@@ -422,7 +413,6 @@
         let topicChartInstance = null;
         const SPACING = [1, 3, 7, 21, 60];
 
-        // Instant session recovery
         if (jwtToken) {
             document.getElementById('auth-modal').classList.add('hidden');
             const cachedUser = localStorage.getItem('dsa_user');
@@ -439,10 +429,8 @@
 
         function toggleAuthMode() {
             isSignup = !isSignup;
-            document.getElementById('auth-title').innerText = isSignup ? 'Create Your Account' : 'DSA MASTERY ENGINE';
+            document.getElementById('auth-title').innerText = isSignup ? 'Create Account' : 'DSA AI COACH ENGINE';
             document.getElementById('name-field').classList.toggle('hidden', !isSignup);
-            document.getElementById('auth-submit-btn').querySelector('span').innerText = isSignup ? 'Sign Up' : 'Sign In';
-            document.getElementById('auth-toggle-btn').innerHTML = isSignup ? 'Already have an account? <span class="underline font-bold">Sign In</span>' : "Need an account? <span class=\"underline font-bold\">Create Account</span>";
         }
 
         function handleAuth(e) {
@@ -469,11 +457,7 @@
                 });
         }
 
-        function logout() {
-            localStorage.removeItem('dsa_jwt');
-            localStorage.removeItem('dsa_user');
-            location.reload();
-        }
+        function logout() { localStorage.removeItem('dsa_jwt'); localStorage.removeItem('dsa_user'); location.reload(); }
 
         function initApp() {
             if (!jwtToken) return;
@@ -484,8 +468,6 @@
                 }
                 document.getElementById('auth-modal').classList.add('hidden');
                 loadAllData();
-            }).catch(() => {
-                document.getElementById('auth-modal').classList.remove('hidden');
             });
         }
 
@@ -498,32 +480,48 @@
                 renderCharts();
                 updateTopMetrics();
             });
-            loadRoadmap();
+            loadCoachInsights();
+        }
+
+        function loadCoachInsights() {
+            apiFetch('/api/coach/insights').then(data => {
+                document.getElementById('coach-track-badge').innerText = data.summary.trackStatus;
+                document.getElementById('coach-directive').innerText = data.aiFeedback;
+                document.getElementById('coach-reason').innerText = `Diagnosis: ${data.summary.adaptationReason}`;
+            });
+        }
+
+        function askAiCoach() {
+            const q = document.getElementById('ai-question').value;
+            if (!q) return;
+            const ansBox = document.getElementById('ai-answer');
+            ansBox.classList.remove('hidden');
+            ansBox.innerText = "Coach thinking...";
+
+            apiFetch('/api/coach/ask', { method: 'POST', body: JSON.stringify({ question: q }) }).then(res => {
+                ansBox.innerText = res.answer;
+            });
+        }
+
+        function triggerCoachEmail() {
+            apiFetch('/api/coach/send-email', { method: 'POST' }).then(res => {
+                alert(res.message);
+            });
         }
 
         function triggerCelebration() {
-            confetti({
-                particleCount: 120,
-                spread: 80,
-                origin: { y: 0.6 },
-                colors: ['#10b981', '#06b6d4', '#6366f1', '#ec4899', '#f59e0b']
-            });
+            confetti({ particleCount: 120, spread: 80, origin: { y: 0.6 }, colors: ['#10b981', '#06b6d4', '#6366f1', '#ec4899', '#f59e0b'] });
         }
 
         function updateProgress(problemId, key, value) {
             const prob = problemsData.find(p => p.id === problemId);
             if (!prob) return;
-            
             const oldStatus = prob.status;
             prob[key] = value;
 
             if (key === 'status') {
-                if ((value === 'Solved' || value === 'Mastered') && oldStatus !== value) {
-                    triggerCelebration();
-                }
-                if ((value === 'Solved' || value === 'Mastered') && !prob.solved_date) {
-                    prob.solved_date = new Date().toISOString().split('T')[0];
-                }
+                if ((value === 'Solved' || value === 'Mastered') && oldStatus !== value) triggerCelebration();
+                if ((value === 'Solved' || value === 'Mastered') && !prob.solved_date) prob.solved_date = new Date().toISOString().split('T')[0];
             }
 
             apiFetch(`/api/progress/${problemId}`, { method: 'PUT', body: JSON.stringify(prob) }).then(() => {
@@ -531,6 +529,7 @@
                 renderKanban();
                 renderCharts();
                 updateTopMetrics();
+                loadCoachInsights();
             });
         }
 
@@ -565,21 +564,15 @@
         function toggleSection(bodyId, iconId) {
             const body = document.getElementById(bodyId);
             const icon = document.getElementById(iconId);
-            if (body) {
-                body.classList.toggle('hidden');
-                if (icon) icon.classList.toggle('rotate-180');
-            }
+            if (body) { body.classList.toggle('hidden'); if (icon) icon.classList.toggle('rotate-180'); }
         }
 
         function populateTopicsFilter() {
             const select = document.getElementById('filter-topic');
             select.innerHTML = '<option value="ALL">All Topics</option>';
-            [...new Set(problemsData.map(p => p.topic))].forEach(t => {
-                select.innerHTML += `<option value="${t}">${t}</option>`;
-            });
+            [...new Set(problemsData.map(p => p.topic))].forEach(t => { select.innerHTML += `<option value="${t}">${t}</option>`; });
         }
 
-        // --- MASTER TABLE RENDER WITH DIRECT LEETCODE HYPERLINKS ---
         function renderTable() {
             const search = document.getElementById('search-input').value.toLowerCase();
             const topic = document.getElementById('filter-topic').value;
@@ -597,24 +590,16 @@
             const tbody = document.getElementById('table-body');
             tbody.innerHTML = filtered.map(p => {
                 const nextDue = calculateDue(p.solved_date, p.revisions);
-
-                const diffBadge = p.difficulty === 'Easy' 
-                    ? 'bg-cyan-500/15 text-cyan-300 border-cyan-500/30' 
-                    : p.difficulty === 'Medium' 
-                    ? 'bg-amber-500/15 text-amber-300 border-amber-500/30' 
-                    : 'bg-rose-500/15 text-rose-300 border-rose-500/30';
-
-                const priorityBadge = p.priority === 'P1'
-                    ? 'bg-orange-500/20 text-orange-400 border-orange-500/30 font-mono'
-                    : 'bg-blue-500/15 text-blue-400 border-blue-500/30 font-mono';
+                const diffBadge = p.difficulty === 'Easy' ? 'bg-cyan-500/15 text-cyan-300 border-cyan-500/30' : p.difficulty === 'Medium' ? 'bg-amber-500/15 text-amber-300 border-amber-500/30' : 'bg-rose-500/15 text-rose-300 border-rose-500/30';
+                const priorityBadge = p.priority === 'P1' ? 'bg-orange-500/20 text-orange-400 border-orange-500/30 font-mono' : 'bg-blue-500/15 text-blue-400 border-blue-500/30 font-mono';
 
                 return `
                     <tr class="hover:bg-obsidian-900/60 transition cursor-pointer" onclick="toggleExpand(${p.id})">
                         <td class="p-4 text-center font-mono text-slate-500">${p.id}</td>
                         <td class="p-4 font-bold text-slate-100">
-                            <a href="${p.url || '#'}" target="_blank" rel="noopener noreferrer" onclick="event.stopPropagation()" class="hover:text-emerald-400 transition-colors inline-flex items-center gap-1.5 group">
+                            <a href="${p.url || '#'}" target="_blank" rel="noopener noreferrer" onclick="event.stopPropagation()" class="hover:text-emerald-400 transition inline-flex items-center gap-1.5 group">
                                 <span>${p.name}</span>
-                                <i data-lucide="external-link" class="w-3.5 h-3.5 text-slate-500 group-hover:text-emerald-400 transition-transform"></i>
+                                <i data-lucide="external-link" class="w-3.5 h-3.5 text-slate-500 group-hover:text-emerald-400"></i>
                             </a>
                         </td>
                         <td class="p-4 text-slate-400 text-[11px]">${p.topic}</td>
@@ -640,15 +625,8 @@
                         <td colspan="9" class="p-4">
                             <div class="flex flex-col md:flex-row gap-4 items-start justify-between bg-obsidian-950 p-4 rounded-2xl border border-obsidian-800">
                                 <div class="flex-1 w-full space-y-2">
-                                    <label class="text-[10px] uppercase font-bold tracking-wider text-emerald-400">Key Pattern Notes & Logic Summary</label>
-                                    <textarea onchange="updateProgress(${p.id}, 'pattern_notes', this.value)" placeholder="Write your key solution insights or edge cases..." class="w-full bg-obsidian-900 border border-obsidian-800 rounded-xl p-3 text-xs text-slate-200 outline-none focus:border-emerald-500 h-20">${p.pattern_notes || ''}</textarea>
-                                </div>
-                                <div class="text-xs text-slate-400 space-y-2 min-w-[220px]">
-                                    <p class="font-mono"><span class="text-slate-500">Solved Date:</span> ${p.solved_date || 'Not solved yet'}</p>
-                                    <p class="font-mono"><span class="text-slate-500">Curriculum Week:</span> ${p.week}</p>
-                                    <a href="${p.url || '#'}" target="_blank" rel="noopener noreferrer" class="mt-2 px-3 py-1.5 rounded-lg text-xs font-bold bg-emerald-500/10 text-emerald-300 border border-emerald-500/20 hover:bg-emerald-500/20 transition inline-flex items-center gap-1.5">
-                                        Open LeetCode Problem <i data-lucide="external-link" class="w-3.5 h-3.5"></i>
-                                    </a>
+                                    <label class="text-[10px] uppercase font-bold text-emerald-400">Key Logic Notes</label>
+                                    <textarea onchange="updateProgress(${p.id}, 'pattern_notes', this.value)" placeholder="Key insights..." class="w-full bg-obsidian-900 border border-obsidian-800 rounded-xl p-3 text-xs text-slate-200 outline-none focus:border-emerald-500 h-20">${p.pattern_notes || ''}</textarea>
                                 </div>
                             </div>
                         </td>
@@ -661,16 +639,11 @@
         function toggleExpand(id) {
             const row = document.getElementById(`expand-row-${id}`);
             const icon = document.getElementById(`expand-icon-${id}`);
-            if (row) {
-                row.classList.toggle('hidden');
-                if (icon) icon.classList.toggle('rotate-180');
-            }
+            if (row) { row.classList.toggle('hidden'); if (icon) icon.classList.toggle('rotate-180'); }
         }
 
-        // --- DRAG AND DROP KANBAN BOARD LOGIC ---
         function allowDrop(e) { e.preventDefault(); }
         function handleDragStart(e, id) { e.dataTransfer.setData("text/plain", id); }
-
         function handleDrop(e, targetStatus) {
             e.preventDefault();
             const id = parseInt(e.dataTransfer.getData("text/plain"));
@@ -679,21 +652,19 @@
 
         function renderKanban() {
             const columns = { 'Todo': 'todo', 'Hint-solved': 'hint', 'Solved': 'solved', 'Mastered': 'mastered' };
-            
             Object.keys(columns).forEach(st => {
                 const list = problemsData.filter(p => p.status === st);
                 document.getElementById(`kanban-count-${columns[st]}`).innerText = list.length;
-                
                 document.getElementById(`kanban-list-${columns[st]}`).innerHTML = list.map(p => `
                     <div draggable="true" ondragstart="handleDragStart(event, ${p.id})" class="glass-card p-4 rounded-2xl space-y-3 cursor-grab active:cursor-grabbing">
                         <div class="flex justify-between items-start gap-2">
-                            <a href="${p.url || '#'}" target="_blank" rel="noopener noreferrer" onclick="event.stopPropagation()" class="font-bold text-xs text-slate-100 hover:text-emerald-400 transition-colors inline-flex items-center gap-1 group leading-snug">
+                            <a href="${p.url || '#'}" target="_blank" rel="noopener noreferrer" class="font-bold text-xs text-slate-100 hover:text-emerald-400 transition inline-flex items-center gap-1 group">
                                 <span>${p.name}</span>
-                                <i data-lucide="external-link" class="w-3 h-3 text-slate-500 group-hover:text-emerald-400 shrink-0"></i>
+                                <i data-lucide="external-link" class="w-3 h-3 text-slate-500 group-hover:text-emerald-400"></i>
                             </a>
-                            <span class="text-[9px] font-bold px-1.5 py-0.5 rounded uppercase border shrink-0 ${p.difficulty === 'Easy' ? 'bg-cyan-500/10 text-cyan-300 border-cyan-500/20' : p.difficulty === 'Medium' ? 'bg-amber-500/10 text-amber-300 border-amber-500/20' : 'bg-rose-500/10 text-rose-300 border-rose-500/20'}">${p.difficulty}</span>
+                            <span class="text-[9px] font-bold px-1.5 py-0.5 rounded border ${p.difficulty === 'Easy' ? 'bg-cyan-500/10 text-cyan-300 border-cyan-500/20' : p.difficulty === 'Medium' ? 'bg-amber-500/10 text-amber-300 border-amber-500/20' : 'bg-rose-500/10 text-rose-300 border-rose-500/20'}">${p.difficulty}</span>
                         </div>
-                        <p class="text-[10px] text-slate-400 line-clamp-1">${p.topic}</p>
+                        <p class="text-[10px] text-slate-400">${p.topic}</p>
                         <div class="flex justify-between items-center text-[10px] text-slate-500 pt-2 border-t border-obsidian-800">
                             <span class="font-mono">Rev: ${p.revisions}/5</span>
                             <span class="text-emerald-400 font-mono">${calculateDue(p.solved_date, p.revisions)}</span>
@@ -703,7 +674,6 @@
             });
         }
 
-        // --- CHART.JS VISUALIZATIONS ---
         function renderCharts() {
             const total = problemsData.length;
             const solved = problemsData.filter(p => p.status === 'Solved').length;
@@ -718,19 +688,9 @@
                 type: 'doughnut',
                 data: {
                     labels: ['Todo', 'Hint-Solved', 'Solved', 'Mastered'],
-                    datasets: [{
-                        data: [todo, hint, solved, mastered],
-                        backgroundColor: ['#27272a', '#f59e0b', '#10b981', '#6366f1'],
-                        borderWidth: 0,
-                        hoverOffset: 6
-                    }]
+                    datasets: [{ data: [todo, hint, solved, mastered], backgroundColor: ['#27272a', '#f59e0b', '#10b981', '#6366f1'], borderWidth: 0 }]
                 },
-                options: {
-                    cutout: '75%',
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: { legend: { display: false } }
-                }
+                options: { cutout: '75%', responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
             });
 
             const topicCounts = {};
@@ -757,35 +717,10 @@
                     ]
                 },
                 options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    scales: {
-                        x: { grid: { display: false }, ticks: { color: '#a1a1aa', font: { size: 10, family: 'Inter' } } },
-                        y: { grid: { color: '#27272a' }, ticks: { color: '#a1a1aa', font: { size: 10, family: 'JetBrains Mono' } } }
-                    },
-                    plugins: { legend: { labels: { color: '#d4d4d8', font: { size: 11, family: 'Inter' } } } }
+                    responsive: true, maintainAspectRatio: false,
+                    scales: { x: { grid: { display: false }, ticks: { color: '#a1a1aa' } }, y: { grid: { color: '#27272a' }, ticks: { color: '#a1a1aa' } } },
+                    plugins: { legend: { labels: { color: '#d4d4d8' } } }
                 }
-            });
-        }
-
-        // --- ROADMAP BLUEPRINT ---
-        function loadRoadmap() {
-            apiFetch('/api/roadmap').then(roadmap => {
-                document.getElementById('body-roadmap').innerHTML = roadmap.map(r => `
-                    <div class="glass-card p-5 rounded-2xl flex flex-col md:flex-row md:items-center justify-between gap-4">
-                        <div class="space-y-1">
-                            <div class="flex items-center gap-2">
-                                <span class="text-[10px] font-mono px-2.5 py-0.5 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded-full font-bold uppercase tracking-wider">Week ${r.week}</span>
-                                <span class="text-xs text-slate-400 font-medium">${r.phase}</span>
-                            </div>
-                            <h3 class="font-extrabold text-slate-100 text-base tracking-wide">${r.topic}</h3>
-                            <p class="text-xs text-slate-400"><span class="text-slate-500 font-medium">Patterns:</span> ${r.patterns}</p>
-                        </div>
-                        <div class="text-xs text-amber-300 bg-amber-500/10 border border-amber-500/20 px-4 py-2 rounded-xl font-medium max-w-sm">
-                            🎯 <span class="font-bold">Goal:</span> ${r.goal}
-                        </div>
-                    </div>
-                `).join('');
             });
         }
 
