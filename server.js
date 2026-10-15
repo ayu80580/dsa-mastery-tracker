@@ -26,6 +26,15 @@ async function initDb() {
                 password_hash TEXT NOT NULL,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             );
+            CREATE TABLE IF NOT EXISTS problems (
+                id INT PRIMARY KEY,
+                week INT,
+                topic TEXT,
+                name TEXT,
+                difficulty TEXT,
+                priority TEXT,
+                url TEXT
+            );
             CREATE TABLE IF NOT EXISTS user_progress (
                 id SERIAL PRIMARY KEY,
                 user_id INT REFERENCES users(id),
@@ -38,20 +47,8 @@ async function initDb() {
                 updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 UNIQUE(user_id, problem_id)
             );
-            CREATE TABLE IF NOT EXISTS contest_logs (
-                id SERIAL PRIMARY KEY,
-                user_id INT REFERENCES users(id),
-                date TEXT,
-                type TEXT,
-                name TEXT,
-                qs_solved INT,
-                rank INT,
-                rating INT,
-                mistake TEXT,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            );
         `);
-        console.log('Database tables ready.');
+        console.log('Database tables verified.');
     } catch (err) {
         console.error('Database initialization failed:', err);
     }
@@ -107,7 +104,7 @@ app.post('/api/auth/login', async (req, res) => {
 
 app.get('/api/auth/me', authenticateToken, (req, res) => res.json({ user: req.user }));
 
-// Problems & User Progress APIs
+// Get Problems & User Progress
 app.get('/api/problems', authenticateToken, async (req, res) => {
     try {
         const query = `
@@ -147,7 +144,7 @@ app.put('/api/progress/:problemId', authenticateToken, async (req, res) => {
     }
 });
 
-// Dashboard Analytics API
+// Dashboard Analytics
 app.get('/api/dashboard', authenticateToken, async (req, res) => {
     try {
         const summaryQuery = `

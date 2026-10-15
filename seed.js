@@ -9,8 +9,8 @@ const pool = new Pool({
 });
 
 async function seed() {
-    console.log('Connecting to PostgreSQL & reading Excel...');
-    const workbook = XLSX.readFile(excelPath);
+    console.log('Connecting to PostgreSQL & parsing Excel with hyperlinks...');
+    const workbook = XLSX.readFile(excelPath, { cellDates: true, cellStyles: true });
 
     await pool.query(`
         CREATE TABLE IF NOT EXISTS problems (
@@ -19,7 +19,8 @@ async function seed() {
             topic TEXT,
             name TEXT,
             difficulty TEXT,
-            priority TEXT
+            priority TEXT,
+            url TEXT
         );
         CREATE TABLE IF NOT EXISTS roadmap (
             week INT PRIMARY KEY,
@@ -30,29 +31,46 @@ async function seed() {
         );
     `);
 
-    // Seed Problems
     const problemsSheet = workbook.Sheets['Problems'];
-    const problemsData = XLSX.utils.sheet_to_json(problemsSheet);
+    const range = XLSX.utils.decode_range(problemsSheet['!ref']);
 
-    for (const row of problemsData) {
-        if (row['#'] && row['Problem (click to open)']) {
+    // Iterate through sheet rows to extract values and hyperlinks
+    for (let r = range.s.r + 1; r <= range.e.r; r++) {
+        const idCell = problemsSheet[XLSX.utils.encode_cell({ r: r, c: 0 })];   // Col A: #
+        const weekCell = problemsSheet[XLSX.utils.encode_cell({ r: r, c: 1 })]; // Col B: Week
+        const topicCell = problemsSheet[XLSX.utils.encode_cell({ r: r, c: 2 })];// Col C: Topic
+        const nameCell = problemsSheet[XLSX.utils.encode_cell({ r: r, c: 3 })]; // Col D: Problem (click to open)
+        const diffCell = problemsSheet[XLSX.utils.encode_cell({ r: r, c: 4 })]; // Col E: Difficulty
+        const prioCell = problemsSheet[XLSX.utils.encode_cell({ r: r, c: 5 })]; // Col F: Priority
+
+        if (idCell && idCell.v && nameCell && nameCell.v) {
+            const id = parseInt(idCell.v);
+            const week = weekCell ? parseInt(weekCell.v) : 1;
+            const topic = topicCell ? String(topicCell.v) : 'General';
+            const name = String(nameCell.v);
+            const difficulty = diffCell ? String(diffCell.v) : 'Easy';
+            const priority = prioCell ? String(prioCell.v) : 'P2';
+
+            // Extract hyperlink target target URL
+            let url = '';
+            if (nameCell.l && nameCell.l.Target) {
+                url = nameCell.l.Target;
+            } else {
+                const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+                url = `https://leetcode.com/problems/${slug}/`;
+            }
+
             await pool.query(
-                `INSERT INTO problems (id, week, topic, name, difficulty, priority)
-                 VALUES ($1, $2, $3, $4, $5, $6)
+                `INSERT INTO problems (id, week, topic, name, difficulty, priority, url)
+                 VALUES ($1, $2, $3, $4, $5, $6, $7)
                  ON CONFLICT (id) DO UPDATE SET
                     week = EXCLUDED.week,
                     topic = EXCLUDED.topic,
                     name = EXCLUDED.name,
                     difficulty = EXCLUDED.difficulty,
-                    priority = EXCLUDED.priority`,
-                [
-                    row['#'],
-                    row['Week'] || 1,
-                    row['Topic'] || 'General',
-                    row['Problem (click to open)'],
-                    row['Difficulty'] || 'Easy',
-                    row['Priority'] || 'P2'
-                ]
+                    priority = EXCLUDED.priority,
+                    url = EXCLUDED.url`,
+                [id, week, topic, name, difficulty, priority, url]
             );
         }
     }
@@ -82,7 +100,7 @@ async function seed() {
         }
     }
 
-    console.log('PostgreSQL database successfully seeded!');
+    console.log('PostgreSQL database successfully seeded with all LeetCode URLs!');
     await pool.end();
 }
 
