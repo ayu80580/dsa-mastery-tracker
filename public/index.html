@@ -3,97 +3,318 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DSA Mastery Engine</title>
+    <title>DSA Mastery Engine | Next-Gen Command Center</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        dark: {
+                            950: '#070a12',
+                            900: '#0f172a',
+                            850: '#141d33',
+                            800: '#1e293b',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
     <style>
-        body { background-color: #0f172a; color: #f8fafc; font-family: system-ui, sans-serif; }
-        .glass { background: rgba(30, 41, 59, 0.75); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.08); }
+        body {
+            background-color: #070a12;
+            color: #f8fafc;
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-image: 
+                radial-gradient(at 10% 10%, rgba(99, 102, 241, 0.15) 0px, transparent 45%),
+                radial-gradient(at 90% 85%, rgba(6, 182, 212, 0.12) 0px, transparent 45%),
+                radial-gradient(at 50% 50%, rgba(139, 92, 246, 0.08) 0px, transparent 60%);
+            background-attachment: fixed;
+        }
+        .glass-panel {
+            background: rgba(15, 23, 42, 0.65);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        .glass-card-hover {
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .glass-card-hover:hover {
+            border-color: rgba(99, 102, 241, 0.4);
+            transform: translateY(-2px);
+            box-shadow: 0 12px 30px -10px rgba(99, 102, 241, 0.25);
+        }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #070a12; }
+        ::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #334155; }
     </style>
+    <!-- Instant Auth State Check to prevent flash/lag on refresh -->
+    <script>
+        (function() {
+            const token = localStorage.getItem('dsa_jwt');
+            if (token) {
+                document.documentElement.classList.add('is-authenticated');
+            }
+        })();
+    </script>
 </head>
-<body class="min-h-screen pb-12">
+<body class="min-h-screen pb-16 flex flex-col">
 
-    <!-- Auth Modal -->
-    <div id="auth-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 backdrop-blur-md">
-        <div class="glass p-8 rounded-2xl w-full max-w-md shadow-2xl">
-            <h2 id="auth-title" class="text-xl font-bold mb-4">Sign In</h2>
-            <form onsubmit="handleAuth(event)" class="space-y-4">
+    <!-- AUTHENTICATION OVERLAY (Hidden instantly if logged in) -->
+    <div id="auth-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-dark-950/90 backdrop-blur-xl transition-all duration-300">
+        <div class="glass-panel p-8 rounded-3xl w-full max-w-md shadow-2xl border border-indigo-500/20 relative overflow-hidden">
+            <div class="absolute -top-24 -right-24 w-48 h-48 bg-indigo-500/20 rounded-full blur-3xl pointer-events-none"></div>
+            <div class="absolute -bottom-24 -left-24 w-48 h-48 bg-cyan-500/20 rounded-full blur-3xl pointer-events-none"></div>
+
+            <div class="flex items-center gap-3 mb-6 relative z-10">
+                <div class="p-3 bg-gradient-to-tr from-indigo-600 via-purple-600 to-cyan-500 rounded-2xl text-white shadow-lg shadow-indigo-500/30">
+                    <i data-lucide="terminal" class="w-6 h-6"></i>
+                </div>
+                <div>
+                    <h2 id="auth-title" class="text-xl font-bold tracking-tight text-white">Welcome Back</h2>
+                    <p class="text-xs text-slate-400 mt-0.5">36-Week LeetCode Mastery Engine</p>
+                </div>
+            </div>
+
+            <form onsubmit="handleAuth(event)" class="space-y-4 relative z-10">
                 <div id="name-field" class="hidden space-y-1">
-                    <label class="text-xs font-semibold text-slate-300">Name</label>
-                    <input type="text" id="auth-name" class="w-full bg-slate-900 border border-slate-700 rounded p-2 text-sm">
+                    <label class="text-xs font-semibold text-slate-300">Full Name</label>
+                    <input type="text" id="auth-name" placeholder="John Doe" class="w-full bg-dark-900/80 border border-slate-700/80 rounded-xl px-3.5 py-2.5 text-sm text-slate-100 placeholder-slate-500 outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition">
                 </div>
                 <div class="space-y-1">
-                    <label class="text-xs font-semibold text-slate-300">Email</label>
-                    <input type="email" id="auth-email" required class="w-full bg-slate-900 border border-slate-700 rounded p-2 text-sm">
+                    <label class="text-xs font-semibold text-slate-300">Email Address</label>
+                    <input type="email" id="auth-email" required placeholder="user@example.com" class="w-full bg-dark-900/80 border border-slate-700/80 rounded-xl px-3.5 py-2.5 text-sm text-slate-100 placeholder-slate-500 outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition">
                 </div>
                 <div class="space-y-1">
                     <label class="text-xs font-semibold text-slate-300">Password</label>
-                    <input type="password" id="auth-password" required class="w-full bg-slate-900 border border-slate-700 rounded p-2 text-sm">
+                    <input type="password" id="auth-password" required placeholder="••••••••" class="w-full bg-dark-900/80 border border-slate-700/80 rounded-xl px-3.5 py-2.5 text-sm text-slate-100 placeholder-slate-500 outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition">
                 </div>
-                <div id="auth-error" class="text-xs text-rose-400 hidden"></div>
-                <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-500 font-semibold py-2 rounded text-sm">Submit</button>
+                <div id="auth-error" class="text-xs text-rose-400 font-medium hidden bg-rose-500/10 border border-rose-500/20 p-2.5 rounded-lg"></div>
+                <button type="submit" id="auth-submit-btn" class="w-full bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-600 hover:from-indigo-500 hover:to-indigo-500 text-white font-semibold py-3 rounded-xl transition text-sm shadow-lg shadow-indigo-600/30 flex items-center justify-center gap-2">
+                    <span>Sign In</span>
+                    <i data-lucide="arrow-right" class="w-4 h-4"></i>
+                </button>
             </form>
-            <button onclick="toggleAuthMode()" id="auth-toggle-btn" class="mt-4 text-xs text-indigo-400 hover:underline w-full text-center block">
-                Need an account? Sign Up
+
+            <div class="mt-5 text-center relative z-10">
+                <button onclick="toggleAuthMode()" id="auth-toggle-btn" class="text-xs text-indigo-400 hover:text-indigo-300 transition font-medium">
+                    Don't have an account? <span class="underline">Create Account</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MAIN APP NAVIGATION -->
+    <header class="sticky top-0 z-40 glass-panel border-b border-slate-800/80 px-6 py-3.5">
+        <div class="max-w-7xl mx-auto flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="p-2.5 bg-gradient-to-br from-indigo-500 via-purple-500 to-cyan-500 rounded-xl text-white shadow-md shadow-indigo-500/20">
+                    <i data-lucide="cpu" class="w-5 h-5"></i>
+                </div>
+                <div>
+                    <div class="flex items-center gap-2">
+                        <h1 class="font-black text-lg tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-white via-slate-200 to-slate-400">DSA MASTERY</h1>
+                        <span class="text-[10px] uppercase tracking-widest font-extrabold px-2 py-0.5 rounded-full bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">v2.0</span>
+                    </div>
+                    <p class="text-xs text-slate-400 flex items-center gap-1.5 mt-0.5">
+                        <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                        Logged in: <span id="user-display" class="text-indigo-300 font-semibold">User</span>
+                    </p>
+                </div>
+            </div>
+
+            <!-- Navigation Tabs -->
+            <div class="flex gap-1.5 bg-dark-900/80 p-1 rounded-2xl border border-slate-800/80">
+                <button onclick="switchTab('dashboard')" id="tab-dashboard" class="px-4 py-2 text-xs font-semibold rounded-xl transition-all duration-200 flex items-center gap-2 bg-indigo-600 text-white shadow-md shadow-indigo-600/30">
+                    <i data-lucide="layout-dashboard" class="w-3.5 h-3.5"></i> Dashboard
+                </button>
+                <button onclick="switchTab('problems')" id="tab-problems" class="px-4 py-2 text-xs font-semibold rounded-xl transition-all duration-200 flex items-center gap-2 text-slate-400 hover:text-white">
+                    <i data-lucide="code-2" class="w-3.5 h-3.5"></i> Problems
+                </button>
+                <button onclick="switchTab('roadmap')" id="tab-roadmap" class="px-4 py-2 text-xs font-semibold rounded-xl transition-all duration-200 flex items-center gap-2 text-slate-400 hover:text-white">
+                    <i data-lucide="map" class="w-3.5 h-3.5"></i> Roadmap
+                </button>
+            </div>
+
+            <button onclick="logout()" class="px-3.5 py-2 text-xs font-medium bg-dark-900 hover:bg-slate-800 text-slate-300 hover:text-white rounded-xl border border-slate-800 transition flex items-center gap-2">
+                <i data-lucide="log-out" class="w-3.5 h-3.5 text-slate-400"></i> Logout
             </button>
         </div>
-    </div>
+    </header>
 
-    <!-- Header Navigation -->
-    <nav class="sticky top-0 z-40 glass border-b border-slate-800 px-6 py-4 flex items-center justify-between">
-        <div>
-            <h1 class="font-bold text-base leading-none">DSA Mastery Tracker</h1>
-            <p class="text-xs text-slate-400 mt-1">User: <span id="user-display" class="text-indigo-400 font-semibold">-</span></p>
-        </div>
-        <div class="flex gap-2 bg-slate-900/60 p-1 rounded-xl border border-slate-800">
-            <button onclick="switchTab('dashboard')" id="tab-dashboard" class="px-4 py-1.5 text-xs rounded-lg font-medium bg-indigo-600 text-white">Dashboard</button>
-            <button onclick="switchTab('problems')" id="tab-problems" class="px-4 py-1.5 text-xs rounded-lg font-medium text-slate-400">Problems</button>
-            <button onclick="switchTab('roadmap')" id="tab-roadmap" class="px-4 py-1.5 text-xs rounded-lg font-medium text-slate-400">Roadmap</button>
-        </div>
-        <button onclick="logout()" class="px-3 py-1.5 text-xs font-medium bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg">Logout</button>
-    </nav>
-
-    <!-- Main Container -->
-    <div class="max-w-7xl mx-auto px-6 mt-8 space-y-8">
+    <!-- CONTENT VIEWS CONTAINER -->
+    <main class="max-w-7xl mx-auto px-6 mt-8 flex-1 w-full space-y-8">
         
-        <!-- Dashboard View -->
-        <div id="view-dashboard" class="space-y-6">
-            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <div class="glass p-5 rounded-2xl"><p class="text-xs font-semibold text-slate-400 uppercase">Total Problems</p><span id="stat-total" class="text-3xl font-bold mt-2 block">0</span></div>
-                <div class="glass p-5 rounded-2xl"><p class="text-xs font-semibold text-emerald-400 uppercase">Solved</p><span id="stat-solved" class="text-3xl font-bold text-emerald-400 mt-2 block">0</span></div>
-                <div class="glass p-5 rounded-2xl"><p class="text-xs font-semibold text-indigo-400 uppercase">Mastered</p><span id="stat-mastered" class="text-3xl font-bold text-indigo-400 mt-2 block">0</span></div>
-                <div class="glass p-5 rounded-2xl"><p class="text-xs font-semibold text-amber-400 uppercase">Progress</p><span id="stat-rate" class="text-3xl font-bold text-amber-400 mt-2 block">0%</span></div>
+        <!-- DASHBOARD VIEW -->
+        <div id="view-dashboard" class="space-y-8">
+            <!-- Top Hero Stats Cards -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+                <div class="glass-panel p-6 rounded-3xl glass-card-hover relative overflow-hidden group">
+                    <div class="absolute -right-4 -bottom-4 w-24 h-24 bg-slate-700/10 rounded-full blur-xl group-hover:bg-slate-600/20 transition"></div>
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <p class="text-xs font-bold uppercase tracking-wider text-slate-400">Total Target</p>
+                            <span id="stat-total" class="text-4xl font-extrabold text-white mt-3 block tracking-tight">0</span>
+                        </div>
+                        <div class="p-3 bg-slate-800/80 rounded-2xl text-slate-300 border border-slate-700/50">
+                            <i data-lucide="target" class="w-6 h-6"></i>
+                        </div>
+                    </div>
+                    <p class="text-[11px] text-slate-500 mt-4 font-medium">Curated LeetCode curriculum</p>
+                </div>
+
+                <div class="glass-panel p-6 rounded-3xl glass-card-hover relative overflow-hidden group">
+                    <div class="absolute -right-4 -bottom-4 w-24 h-24 bg-emerald-500/10 rounded-full blur-xl group-hover:bg-emerald-500/20 transition"></div>
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <p class="text-xs font-bold uppercase tracking-wider text-emerald-400">Solved</p>
+                            <span id="stat-solved" class="text-4xl font-extrabold text-emerald-400 mt-3 block tracking-tight">0</span>
+                        </div>
+                        <div class="p-3 bg-emerald-500/10 rounded-2xl text-emerald-400 border border-emerald-500/20">
+                            <i data-lucide="check-circle-2" class="w-6 h-6"></i>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-2 mt-4">
+                        <div class="flex-1 bg-dark-900 h-1.5 rounded-full overflow-hidden">
+                            <div id="stat-solved-bar" class="bg-emerald-400 h-full rounded-full transition-all duration-700" style="width: 0%"></div>
+                        </div>
+                        <span id="stat-rate" class="text-xs font-bold text-emerald-400">0%</span>
+                    </div>
+                </div>
+
+                <div class="glass-panel p-6 rounded-3xl glass-card-hover relative overflow-hidden group">
+                    <div class="absolute -right-4 -bottom-4 w-24 h-24 bg-indigo-500/10 rounded-full blur-xl group-hover:bg-indigo-500/20 transition"></div>
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <p class="text-xs font-bold uppercase tracking-wider text-indigo-400">Mastered</p>
+                            <span id="stat-mastered" class="text-4xl font-extrabold text-indigo-400 mt-3 block tracking-tight">0</span>
+                        </div>
+                        <div class="p-3 bg-indigo-500/10 rounded-2xl text-indigo-400 border border-indigo-500/20">
+                            <i data-lucide="award" class="w-6 h-6"></i>
+                        </div>
+                    </div>
+                    <p class="text-[11px] text-indigo-300/70 mt-4 font-medium">5/5 Revisions Completed</p>
+                </div>
+
+                <div class="glass-panel p-6 rounded-3xl glass-card-hover relative overflow-hidden group">
+                    <div class="absolute -right-4 -bottom-4 w-24 h-24 bg-amber-500/10 rounded-full blur-xl group-hover:bg-amber-500/20 transition"></div>
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <p class="text-xs font-bold uppercase tracking-wider text-amber-400">Due Revisions</p>
+                            <span id="stat-due" class="text-4xl font-extrabold text-amber-400 mt-3 block tracking-tight">0</span>
+                        </div>
+                        <div class="p-3 bg-amber-500/10 rounded-2xl text-amber-400 border border-amber-500/20">
+                            <i data-lucide="clock" class="w-6 h-6"></i>
+                        </div>
+                    </div>
+                    <p class="text-[11px] text-amber-300/70 mt-4 font-medium">Spaced Repetition Algorithm</p>
+                </div>
             </div>
-            <div class="glass rounded-2xl p-6">
-                <h2 class="text-md font-bold mb-4">Topic Progress</h2>
-                <div id="topic-grid" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
+
+            <!-- Topic Completion Breakdown -->
+            <div class="glass-panel rounded-3xl p-7 space-y-6">
+                <div class="flex items-center justify-between border-b border-slate-800/80 pb-4">
+                    <div class="flex items-center gap-3">
+                        <div class="p-2 bg-indigo-500/10 text-indigo-400 rounded-xl">
+                            <i data-lucide="bar-chart-3" class="w-5 h-5"></i>
+                        </div>
+                        <h2 class="text-lg font-bold text-white tracking-wide">Topic Completion Analytics</h2>
+                    </div>
+                    <span class="text-xs text-slate-400 font-mono">Live Sync</span>
+                </div>
+                <div id="topic-grid" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <!-- Dynamic topic rows injected here -->
+                </div>
             </div>
         </div>
 
-        <!-- Problems View -->
-        <div id="view-problems" class="hidden space-y-4">
-            <div class="glass p-4 rounded-xl flex gap-4">
-                <input type="text" id="search-input" oninput="renderProblems()" placeholder="Search problem or pattern..." class="bg-transparent text-xs w-64 outline-none placeholder-slate-500">
+        <!-- PROBLEMS VIEW -->
+        <div id="view-problems" class="hidden space-y-6">
+            <!-- Search & Filter Controls -->
+            <div class="glass-panel p-4 rounded-2xl flex flex-wrap gap-4 items-center justify-between">
+                <div class="flex items-center gap-3 bg-dark-900/90 border border-slate-800 rounded-xl px-3.5 py-2.5 flex-1 min-w-[280px]">
+                    <i data-lucide="search" class="w-4 h-4 text-slate-400"></i>
+                    <input type="text" id="search-input" oninput="renderProblems()" placeholder="Search problem, pattern, or note..." class="bg-transparent text-xs text-slate-200 outline-none w-full placeholder-slate-500">
+                </div>
+                <div class="flex flex-wrap gap-3">
+                    <select id="filter-topic" onchange="renderProblems()" class="bg-dark-900 border border-slate-800 text-xs rounded-xl px-3 py-2 text-slate-300 outline-none focus:border-indigo-500">
+                        <option value="ALL">All Topics</option>
+                    </select>
+                    <select id="filter-status" onchange="renderProblems()" class="bg-dark-900 border border-slate-800 text-xs rounded-xl px-3 py-2 text-slate-300 outline-none focus:border-indigo-500">
+                        <option value="ALL">All Statuses</option>
+                        <option value="Todo">Todo</option>
+                        <option value="Hint-solved">Hint-solved</option>
+                        <option value="Solved">Solved</option>
+                        <option value="Mastered">Mastered</option>
+                    </select>
+                    <select id="filter-diff" onchange="renderProblems()" class="bg-dark-900 border border-slate-800 text-xs rounded-xl px-3 py-2 text-slate-300 outline-none focus:border-indigo-500">
+                        <option value="ALL">All Difficulties</option>
+                        <option value="Easy">Easy</option>
+                        <option value="Medium">Medium</option>
+                        <option value="Hard">Hard</option>
+                    </select>
+                </div>
             </div>
-            <div class="glass rounded-2xl overflow-x-auto">
-                <table class="w-full text-left text-xs">
-                    <thead class="bg-slate-900/80 uppercase text-slate-400 border-b border-slate-800">
-                        <tr><th class="p-3">#</th><th class="p-3">Problem</th><th class="p-3">Topic</th><th class="p-3">Diff</th><th class="p-3">Status</th><th class="p-3">Revisions</th><th class="p-3">Next Due</th><th class="p-3">Notes</th></tr>
-                    </thead>
-                    <tbody id="problems-body" class="divide-y divide-slate-800"></tbody>
-                </table>
+
+            <!-- Sleek Data Table -->
+            <div class="glass-panel rounded-3xl overflow-hidden border border-slate-800/80">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-xs">
+                        <thead class="bg-dark-900/90 text-slate-400 uppercase font-semibold border-b border-slate-800/80">
+                            <tr>
+                                <th class="p-4 w-12 text-center">#</th>
+                                <th class="p-4">Problem Name</th>
+                                <th class="p-4">Topic</th>
+                                <th class="p-4">Difficulty</th>
+                                <th class="p-4">Status</th>
+                                <th class="p-4 text-center">Revisions</th>
+                                <th class="p-4">Next Revision Due</th>
+                                <th class="p-4">Key Pattern Notes</th>
+                            </tr>
+                        </thead>
+                        <tbody id="problems-body" class="divide-y divide-slate-800/60 font-medium">
+                            <!-- Problems dynamically rendered here -->
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
 
-        <!-- Roadmap View -->
-        <div id="view-roadmap" class="hidden glass rounded-2xl p-6 space-y-3" id="roadmap-container"></div>
-    </div>
+        <!-- ROADMAP VIEW -->
+        <div id="view-roadmap" class="hidden space-y-4">
+            <div class="glass-panel p-6 rounded-3xl mb-6 flex items-center justify-between">
+                <div>
+                    <h2 class="text-xl font-bold text-white tracking-wide">36-Week Mastery Blueprint</h2>
+                    <p class="text-xs text-slate-400 mt-1">Structured sequential progression from diagnostic basics to advanced graph & DP algorithms.</p>
+                </div>
+                <div class="p-3 bg-indigo-500/10 text-indigo-400 rounded-2xl border border-indigo-500/20">
+                    <i data-lucide="compass" class="w-6 h-6"></i>
+                </div>
+            </div>
+            <div id="roadmap-container" class="space-y-4"></div>
+        </div>
+
+    </main>
 
     <script>
         let isSignup = false;
         let jwtToken = localStorage.getItem('dsa_jwt');
         let problemsData = [];
         const SPACING = [1, 3, 7, 21, 60];
+
+        // Check authentication immediately to prevent UI flicker
+        if (jwtToken) {
+            document.getElementById('auth-modal').classList.add('hidden');
+            const cachedUser = localStorage.getItem('dsa_user');
+            if (cachedUser) {
+                document.getElementById('user-display').innerText = cachedUser;
+            }
+        }
 
         function apiFetch(endpoint, options = {}) {
             options.headers = { ...options.headers, 'Content-Type': 'application/json', 'Authorization': `Bearer ${jwtToken}` };
@@ -105,8 +326,10 @@
 
         function toggleAuthMode() {
             isSignup = !isSignup;
-            document.getElementById('auth-title').innerText = isSignup ? 'Create Account' : 'Sign In';
+            document.getElementById('auth-title').innerText = isSignup ? 'Create Your Account' : 'Welcome Back';
             document.getElementById('name-field').classList.toggle('hidden', !isSignup);
+            document.getElementById('auth-submit-btn').querySelector('span').innerText = isSignup ? 'Sign Up' : 'Sign In';
+            document.getElementById('auth-toggle-btn').innerHTML = isSignup ? 'Already have an account? <span class="underline">Sign In</span>' : "Don't have an account? <span class=\"underline\">Create Account</span>";
         }
 
         function handleAuth(e) {
@@ -117,6 +340,7 @@
                 password: document.getElementById('auth-password').value,
                 ...(isSignup && { name: document.getElementById('auth-name').value })
             };
+
             fetch(endpoint, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
                 .then(res => res.json())
                 .then(data => {
@@ -126,41 +350,69 @@
                     } else {
                         jwtToken = data.token;
                         localStorage.setItem('dsa_jwt', jwtToken);
+                        localStorage.setItem('dsa_user', data.user.name);
                         initApp();
                     }
                 });
         }
 
-        function logout() { localStorage.removeItem('dsa_jwt'); location.reload(); }
+        function logout() {
+            localStorage.removeItem('dsa_jwt');
+            localStorage.removeItem('dsa_user');
+            location.reload();
+        }
 
         function initApp() {
             if (!jwtToken) return;
             apiFetch('/api/auth/me').then(data => {
-                document.getElementById('user-display').innerText = data.user.name;
+                if (data.user) {
+                    document.getElementById('user-display').innerText = data.user.name;
+                    localStorage.setItem('dsa_user', data.user.name);
+                }
                 document.getElementById('auth-modal').classList.add('hidden');
                 loadDashboard();
                 loadProblems();
                 loadRoadmap();
+            }).catch(() => {
+                document.getElementById('auth-modal').classList.remove('hidden');
             });
         }
 
         function loadDashboard() {
             apiFetch('/api/dashboard').then(data => {
-                document.getElementById('stat-total').innerText = data.summary.total || 0;
-                document.getElementById('stat-solved').innerText = data.summary.solved || 0;
-                document.getElementById('stat-mastered').innerText = data.summary.mastered || 0;
-                const pct = data.summary.total ? Math.round((data.summary.solved / data.summary.total) * 100) : 0;
+                const total = data.summary.total || 0;
+                const solved = data.summary.solved || 0;
+                const mastered = data.summary.mastered || 0;
+                const pct = total ? Math.round((solved / total) * 100) : 0;
+
+                document.getElementById('stat-total').innerText = total;
+                document.getElementById('stat-solved').innerText = solved;
+                document.getElementById('stat-mastered').innerText = mastered;
                 document.getElementById('stat-rate').innerText = pct + '%';
+                document.getElementById('stat-solved-bar').style.width = pct + '%';
+
+                let dueCount = 0;
+                const today = new Date().toISOString().split('T')[0];
+
+                if (problemsData.length) {
+                    dueCount = problemsData.filter(p => {
+                        if (!p.solved_date || p.revisions >= 5) return false;
+                        const due = calculateDue(p.solved_date, p.revisions);
+                        return due !== 'Mastered' && due !== 'N/A' && due <= today;
+                    }).length;
+                }
+                document.getElementById('stat-due').innerText = dueCount;
 
                 document.getElementById('topic-grid').innerHTML = data.topics.map(t => {
                     const tpct = Math.round((t.solved / t.total) * 100) || 0;
                     return `
-                        <div class="bg-slate-900/60 p-3.5 rounded-xl border border-slate-800">
-                            <div class="flex justify-between text-xs mb-1.5">
-                                <span>${t.topic}</span><span>${t.solved}/${t.total} (${tpct}%)</span>
+                        <div class="bg-dark-900/80 p-4 rounded-2xl border border-slate-800/80 flex flex-col justify-between space-y-3">
+                            <div class="flex justify-between items-center text-xs">
+                                <span class="font-bold text-slate-200 tracking-wide">${t.topic}</span>
+                                <span class="text-slate-400 font-mono text-[11px]">${t.solved}/${t.total} (${tpct}%)</span>
                             </div>
-                            <div class="w-full bg-slate-800 h-1.5 rounded-full overflow-hidden">
-                                <div class="bg-indigo-500 h-full" style="width: ${tpct}%"></div>
+                            <div class="w-full bg-slate-800/80 h-2 rounded-full overflow-hidden">
+                                <div class="bg-gradient-to-r from-indigo-500 via-purple-500 to-cyan-400 h-full rounded-full transition-all duration-700" style="width: ${tpct}%"></div>
                             </div>
                         </div>
                     `;
@@ -171,50 +423,75 @@
         function loadProblems() {
             apiFetch('/api/problems').then(data => {
                 problemsData = data;
+                populateTopicsFilter();
                 renderProblems();
+                loadDashboard();
             });
         }
 
         function renderProblems() {
             const search = document.getElementById('search-input').value.toLowerCase();
-            const filtered = problemsData.filter(p => p.name.toLowerCase().includes(search));
+            const topic = document.getElementById('filter-topic').value;
+            const status = document.getElementById('filter-status').value;
+            const diff = document.getElementById('filter-diff').value;
+
+            const filtered = problemsData.filter(p => {
+                const matchSearch = p.name.toLowerCase().includes(search) || (p.pattern_notes && p.pattern_notes.toLowerCase().includes(search));
+                const matchTopic = topic === 'ALL' || p.topic === topic;
+                const matchStatus = status === 'ALL' || p.status === status;
+                const matchDiff = diff === 'ALL' || p.difficulty === diff;
+                return matchSearch && matchTopic && matchStatus && matchDiff;
+            });
 
             document.getElementById('problems-body').innerHTML = filtered.map(p => {
                 const nextDue = calculateDue(p.solved_date, p.revisions);
+                const diffBadge = p.difficulty === 'Easy' 
+                    ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' 
+                    : p.difficulty === 'Medium' 
+                    ? 'bg-amber-500/10 text-amber-400 border-amber-500/20' 
+                    : 'bg-rose-500/10 text-rose-400 border-rose-500/20';
+
                 return `
-                    <tr class="hover:bg-slate-800/40">
-                        <td class="p-3 text-slate-500">${p.id}</td>
-                        <td class="p-3 font-semibold">${p.name}</td>
-                        <td class="p-3 text-slate-400">${p.topic}</td>
-                        <td class="p-3">${p.difficulty}</td>
-                        <td class="p-3">
-                            <select onchange="updateProgress(${p.id}, 'status', this.value)" class="bg-slate-800 rounded px-2 py-1">
+                    <tr class="hover:bg-dark-900/60 transition-colors">
+                        <td class="p-4 text-center font-mono text-slate-500">${p.id}</td>
+                        <td class="p-4 font-bold text-slate-100">${p.name}</td>
+                        <td class="p-4 text-slate-400 text-[11px]">${p.topic}</td>
+                        <td class="p-4">
+                            <span class="px-2.5 py-1 rounded-lg text-[10px] uppercase font-bold border ${diffBadge}">${p.difficulty}</span>
+                        </td>
+                        <td class="p-4">
+                            <select onchange="updateProgress(${p.id}, 'status', this.value)" class="bg-dark-900 border border-slate-700/80 rounded-xl px-2.5 py-1.5 text-xs text-slate-200 outline-none focus:border-indigo-500">
                                 <option value="Todo" ${p.status === 'Todo' ? 'selected' : ''}>Todo</option>
                                 <option value="Hint-solved" ${p.status === 'Hint-solved' ? 'selected' : ''}>Hint-solved</option>
                                 <option value="Solved" ${p.status === 'Solved' ? 'selected' : ''}>Solved</option>
                                 <option value="Mastered" ${p.status === 'Mastered' ? 'selected' : ''}>Mastered</option>
                             </select>
                         </td>
-                        <td class="p-3">
-                            <input type="number" min="0" max="5" value="${p.revisions}" onchange="updateProgress(${p.id}, 'revisions', parseInt(this.value))" class="w-12 bg-slate-800 rounded text-center">
+                        <td class="p-4 text-center">
+                            <input type="number" min="0" max="5" value="${p.revisions || 0}" onchange="updateProgress(${p.id}, 'revisions', parseInt(this.value))" class="w-12 bg-dark-900 border border-slate-700 rounded-lg text-center py-1 text-xs text-indigo-300 font-bold outline-none focus:border-indigo-500">
                         </td>
-                        <td class="p-3 text-amber-400">${nextDue}</td>
-                        <td class="p-3">
-                            <input type="text" value="${p.pattern_notes || ''}" onchange="updateProgress(${p.id}, 'pattern_notes', this.value)" class="bg-transparent border-b border-transparent focus:border-indigo-500 outline-none w-full">
+                        <td class="p-4 font-mono text-[11px] ${nextDue === 'Mastered' ? 'text-indigo-400 font-bold' : 'text-amber-400'}">${nextDue}</td>
+                        <td class="p-4">
+                            <input type="text" value="${p.pattern_notes || ''}" placeholder="Add key insight..." onchange="updateProgress(${p.id}, 'pattern_notes', this.value)" class="bg-transparent border-b border-slate-800 focus:border-indigo-500 text-xs text-slate-300 outline-none w-full py-1">
                         </td>
                     </tr>
                 `;
             }).join('');
+            lucide.createIcons();
         }
 
         function updateProgress(problemId, key, value) {
             const prob = problemsData.find(p => p.id === problemId);
             if (!prob) return;
             prob[key] = value;
+
             if (key === 'status' && (value === 'Solved' || value === 'Mastered') && !prob.solved_date) {
                 prob.solved_date = new Date().toISOString().split('T')[0];
             }
-            apiFetch(`/api/progress/${problemId}`, { method: 'PUT', body: JSON.stringify(prob) }).then(loadDashboard);
+
+            apiFetch(`/api/progress/${problemId}`, { method: 'PUT', body: JSON.stringify(prob) }).then(() => {
+                loadDashboard();
+            });
         }
 
         function calculateDue(solvedDate, revisions) {
@@ -224,16 +501,29 @@
             return d.toISOString().split('T')[0];
         }
 
+        function populateTopicsFilter() {
+            const select = document.getElementById('filter-topic');
+            select.innerHTML = '<option value="ALL">All Topics</option>';
+            [...new Set(problemsData.map(p => p.topic))].forEach(t => {
+                select.innerHTML += `<option value="${t}">${t}</option>`;
+            });
+        }
+
         function loadRoadmap() {
             apiFetch('/api/roadmap').then(roadmap => {
-                document.getElementById('view-roadmap').innerHTML = roadmap.map(r => `
-                    <div class="bg-slate-900/60 p-4 rounded-xl border border-slate-800 flex justify-between items-center">
-                        <div>
-                            <span class="text-xs px-2 py-0.5 bg-indigo-500/10 text-indigo-400 rounded font-semibold">Week ${r.week}</span>
-                            <h3 class="font-bold text-slate-200 mt-1">${r.topic}</h3>
-                            <p class="text-xs text-slate-400 mt-0.5">${r.patterns}</p>
+                document.getElementById('roadmap-container').innerHTML = roadmap.map(r => `
+                    <div class="glass-panel p-5 rounded-2xl flex flex-col md:flex-row md:items-center justify-between gap-4 glass-card-hover">
+                        <div class="space-y-1">
+                            <div class="flex items-center gap-2">
+                                <span class="text-[10px] px-2.5 py-0.5 bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 rounded-full font-bold uppercase tracking-wider">Week ${r.week}</span>
+                                <span class="text-xs text-slate-400 font-medium">${r.phase}</span>
+                            </div>
+                            <h3 class="font-bold text-slate-100 text-base tracking-wide">${r.topic}</h3>
+                            <p class="text-xs text-slate-400"><span class="text-slate-500 font-medium">Patterns:</span> ${r.patterns}</p>
                         </div>
-                        <div class="text-xs text-amber-400 bg-amber-500/10 px-3 py-1.5 rounded-lg">Goal: ${r.goal}</div>
+                        <div class="text-xs text-amber-300 bg-amber-500/10 border border-amber-500/20 px-4 py-2 rounded-xl font-medium max-w-sm">
+                            🎯 <span class="font-bold">Goal:</span> ${r.goal}
+                        </div>
                     </div>
                 `).join('');
             });
@@ -242,13 +532,16 @@
         function switchTab(tab) {
             ['dashboard', 'problems', 'roadmap'].forEach(t => {
                 document.getElementById(`view-${t}`).classList.add('hidden');
-                document.getElementById(`tab-${t}`).classList.remove('bg-indigo-600', 'text-white');
+                document.getElementById(`tab-${t}`).classList.remove('bg-indigo-600', 'text-white', 'shadow-md', 'shadow-indigo-600/30');
+                document.getElementById(`tab-${t}`).classList.add('text-slate-400');
             });
             document.getElementById(`view-${tab}`).classList.remove('hidden');
-            document.getElementById(`tab-${tab}`).classList.add('bg-indigo-600', 'text-white');
+            document.getElementById(`tab-${tab}`).classList.add('bg-indigo-600', 'text-white', 'shadow-md', 'shadow-indigo-600/30');
+            document.getElementById(`tab-${tab}`).classList.remove('text-slate-400');
         }
 
         initApp();
+        lucide.createIcons();
     </script>
 </body>
 </html>
