@@ -9,9 +9,10 @@ const pool = new Pool({
 });
 
 async function seed() {
-    console.log('Connecting to PostgreSQL & parsing Excel with hyperlinks...');
+    console.log('Connecting to PostgreSQL & ensuring URL column exists...');
     const workbook = XLSX.readFile(excelPath, { cellDates: true, cellStyles: true });
 
+    // Ensure tables exist AND add url column if missing from existing table
     await pool.query(`
         CREATE TABLE IF NOT EXISTS problems (
             id INT PRIMARY KEY,
@@ -22,6 +23,8 @@ async function seed() {
             priority TEXT,
             url TEXT
         );
+        ALTER TABLE problems ADD COLUMN IF NOT EXISTS url TEXT;
+
         CREATE TABLE IF NOT EXISTS roadmap (
             week INT PRIMARY KEY,
             phase TEXT,
@@ -34,12 +37,11 @@ async function seed() {
     const problemsSheet = workbook.Sheets['Problems'];
     const range = XLSX.utils.decode_range(problemsSheet['!ref']);
 
-    // Iterate through sheet rows to extract values and hyperlinks
     for (let r = range.s.r + 1; r <= range.e.r; r++) {
         const idCell = problemsSheet[XLSX.utils.encode_cell({ r: r, c: 0 })];   // Col A: #
         const weekCell = problemsSheet[XLSX.utils.encode_cell({ r: r, c: 1 })]; // Col B: Week
         const topicCell = problemsSheet[XLSX.utils.encode_cell({ r: r, c: 2 })];// Col C: Topic
-        const nameCell = problemsSheet[XLSX.utils.encode_cell({ r: r, c: 3 })]; // Col D: Problem (click to open)
+        const nameCell = problemsSheet[XLSX.utils.encode_cell({ r: r, c: 3 })]; // Col D: Problem Name
         const diffCell = problemsSheet[XLSX.utils.encode_cell({ r: r, c: 4 })]; // Col E: Difficulty
         const prioCell = problemsSheet[XLSX.utils.encode_cell({ r: r, c: 5 })]; // Col F: Priority
 
@@ -51,7 +53,6 @@ async function seed() {
             const difficulty = diffCell ? String(diffCell.v) : 'Easy';
             const priority = prioCell ? String(prioCell.v) : 'P2';
 
-            // Extract hyperlink target target URL
             let url = '';
             if (nameCell.l && nameCell.l.Target) {
                 url = nameCell.l.Target;
@@ -100,7 +101,7 @@ async function seed() {
         }
     }
 
-    console.log('PostgreSQL database successfully seeded with all LeetCode URLs!');
+    console.log('PostgreSQL database successfully updated and seeded with LeetCode URLs!');
     await pool.end();
 }
 

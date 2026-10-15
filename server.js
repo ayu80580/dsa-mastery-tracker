@@ -35,6 +35,8 @@ async function initDb() {
                 priority TEXT,
                 url TEXT
             );
+            ALTER TABLE problems ADD COLUMN IF NOT EXISTS url TEXT;
+
             CREATE TABLE IF NOT EXISTS user_progress (
                 id SERIAL PRIMARY KEY,
                 user_id INT REFERENCES users(id),
@@ -48,7 +50,7 @@ async function initDb() {
                 UNIQUE(user_id, problem_id)
             );
         `);
-        console.log('Database tables verified.');
+        console.log('Database schema verified and updated.');
     } catch (err) {
         console.error('Database initialization failed:', err);
     }
