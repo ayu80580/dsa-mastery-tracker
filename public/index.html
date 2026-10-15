@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DSA Mastery Engine</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        body { background-color: #0f172a; color: #f8fafc; font-family: system-ui, sans-serif; }
+        .glass { background: rgba(30, 41, 59, 0.75); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.08); }
+    </style>
+</head>
+<body class="min-h-screen pb-12">
+
+    <!-- Auth Modal -->
+    <div id="auth-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 backdrop-blur-md">
+        <div class="glass p-8 rounded-2xl w-full max-w-md shadow-2xl">
+            <h2 id="auth-title" class="text-xl font-bold mb-4">Sign In</h2>
+            <form onsubmit="handleAuth(event)" class="space-y-4">
+                <div id="name-field" class="hidden space-y-1">
+                    <label class="text-xs font-semibold text-slate-300">Name</label>
+                    <input type="text" id="auth-name" class="w-full bg-slate-900 border border-slate-700 rounded p-2 text-sm">
+                </div>
+                <div class="space-y-1">
+                    <label class="text-xs font-semibold text-slate-300">Email</label>
+                    <input type="email" id="auth-email" required class="w-full bg-slate-900 border border-slate-700 rounded p-2 text-sm">
+                </div>
+                <div class="space-y-1">
+                    <label class="text-xs font-semibold text-slate-300">Password</label>
+                    <input type="password" id="auth-password" required class="w-full bg-slate-900 border border-slate-700 rounded p-2 text-sm">
+                </div>
+                <div id="auth-error" class="text-xs text-rose-400 hidden"></div>
+                <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-500 font-semibold py-2 rounded text-sm">Submit</button>
+            </form>
+            <button onclick="toggleAuthMode()" id="auth-toggle-btn" class="mt-4 text-xs text-indigo-400 hover:underline w-full text-center block">
+                Need an account? Sign Up
+            </button>
+        </div>
+    </div>
+
+    <!-- Header Navigation -->
+    <nav class="sticky top-0 z-40 glass border-b border-slate-800 px-6 py-4 flex items-center justify-between">
+        <div>
+            <h1 class="font-bold text-base leading-none">DSA Mastery Tracker</h1>
+            <p class="text-xs text-slate-400 mt-1">User: <span id="user-display" class="text-indigo-400 font-semibold">-</span></p>
+        </div>
+        <div class="flex gap-2 bg-slate-900/60 p-1 rounded-xl border border-slate-800">
+            <button onclick="switchTab('dashboard')" id="tab-dashboard" class="px-4 py-1.5 text-xs rounded-lg font-medium bg-indigo-600 text-white">Dashboard</button>
+            <button onclick="switchTab('problems')" id="tab-problems" class="px-4 py-1.5 text-xs rounded-lg font-medium text-slate-400">Problems</button>
+            <button onclick="switchTab('roadmap')" id="tab-roadmap" class="px-4 py-1.5 text-xs rounded-lg font-medium text-slate-400">Roadmap</button>
+        </div>
+        <button onclick="logout()" class="px-3 py-1.5 text-xs font-medium bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg">Logout</button>
+    </nav>
+
+    <!-- Main Container -->
+    <div class="max-w-7xl mx-auto px-6 mt-8 space-y-8">
+        
+        <!-- Dashboard View -->
+        <div id="view-dashboard" class="space-y-6">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div class="glass p-5 rounded-2xl"><p class="text-xs font-semibold text-slate-400 uppercase">Total Problems</p><span id="stat-total" class="text-3xl font-bold mt-2 block">0</span></div>
+                <div class="glass p-5 rounded-2xl"><p class="text-xs font-semibold text-emerald-400 uppercase">Solved</p><span id="stat-solved" class="text-3xl font-bold text-emerald-400 mt-2 block">0</span></div>
+                <div class="glass p-5 rounded-2xl"><p class="text-xs font-semibold text-indigo-400 uppercase">Mastered</p><span id="stat-mastered" class="text-3xl font-bold text-indigo-400 mt-2 block">0</span></div>
+                <div class="glass p-5 rounded-2xl"><p class="text-xs font-semibold text-amber-400 uppercase">Progress</p><span id="stat-rate" class="text-3xl font-bold text-amber-400 mt-2 block">0%</span></div>
+            </div>
+            <div class="glass rounded-2xl p-6">
+                <h2 class="text-md font-bold mb-4">Topic Progress</h2>
+                <div id="topic-grid" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
+            </div>
+        </div>
+
+        <!-- Problems View -->
+        <div id="view-problems" class="hidden space-y-4">
+            <div class="glass p-4 rounded-xl flex gap-4">
+                <input type="text" id="search-input" oninput="renderProblems()" placeholder="Search problem or pattern..." class="bg-transparent text-xs w-64 outline-none placeholder-slate-500">
+            </div>
+            <div class="glass rounded-2xl overflow-x-auto">
+                <table class="w-full text-left text-xs">
+                    <thead class="bg-slate-900/80 uppercase text-slate-400 border-b border-slate-800">
+                        <tr><th class="p-3">#</th><th class="p-3">Problem</th><th class="p-3">Topic</th><th class="p-3">Diff</th><th class="p-3">Status</th><th class="p-3">Revisions</th><th class="p-3">Next Due</th><th class="p-3">Notes</th></tr>
+                    </thead>
+                    <tbody id="problems-body" class="divide-y divide-slate-800"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Roadmap View -->
+        <div id="view-roadmap" class="hidden glass rounded-2xl p-6 space-y-3" id="roadmap-container"></div>
+    </div>
+
+    <script>
+        let isSignup = false;
+        let jwtToken = localStorage.getItem('dsa_jwt');
+        let problemsData = [];
+        const SPACING = [1, 3, 7, 21, 60];
+
+        function apiFetch(endpoint, options = {}) {
+            options.headers = { ...options.headers, 'Content-Type': 'application/json', 'Authorization': `Bearer ${jwtToken}` };
+            return fetch(endpoint, options).then(res => {
+                if (res.status === 401 || res.status === 403) { logout(); throw new Error('Unauthorized'); }
+                return res.json();
+            });
+        }
+
+        function toggleAuthMode() {
+            isSignup = !isSignup;
+            document.getElementById('auth-title').innerText = isSignup ? 'Create Account' : 'Sign In';
+            document.getElementById('name-field').classList.toggle('hidden', !isSignup);
+        }
+
+        function handleAuth(e) {
+            e.preventDefault();
+            const endpoint = isSignup ? '/api/auth/signup' : '/api/auth/login';
+            const body = {
+                email: document.getElementById('auth-email').value,
+                password: document.getElementById('auth-password').value,
+                ...(isSignup && { name: document.getElementById('auth-name').value })
+            };
+            fetch(endpoint, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.error) {
+                        document.getElementById('auth-error').innerText = data.error;
+                        document.getElementById('auth-error').classList.remove('hidden');
+                    } else {
+                        jwtToken = data.token;
+                        localStorage.setItem('dsa_jwt', jwtToken);
+                        initApp();
+                    }
+                });
+        }
+
+        function logout() { localStorage.removeItem('dsa_jwt'); location.reload(); }
+
+        function initApp() {
+            if (!jwtToken) return;
+            apiFetch('/api/auth/me').then(data => {
+                document.getElementById('user-display').innerText = data.user.name;
+                document.getElementById('auth-modal').classList.add('hidden');
+                loadDashboard();
+                loadProblems();
+                loadRoadmap();
+            });
+        }
+
+        function loadDashboard() {
+            apiFetch('/api/dashboard').then(data => {
+                document.getElementById('stat-total').innerText = data.summary.total || 0;
+                document.getElementById('stat-solved').innerText = data.summary.solved || 0;
+                document.getElementById('stat-mastered').innerText = data.summary.mastered || 0;
+                const pct = data.summary.total ? Math.round((data.summary.solved / data.summary.total) * 100) : 0;
+                document.getElementById('stat-rate').innerText = pct + '%';
+
+                document.getElementById('topic-grid').innerHTML = data.topics.map(t => {
+                    const tpct = Math.round((t.solved / t.total) * 100) || 0;
+                    return `
+                        <div class="bg-slate-900/60 p-3.5 rounded-xl border border-slate-800">
+                            <div class="flex justify-between text-xs mb-1.5">
+                                <span>${t.topic}</span><span>${t.solved}/${t.total} (${tpct}%)</span>
+                            </div>
+                            <div class="w-full bg-slate-800 h-1.5 rounded-full overflow-hidden">
+                                <div class="bg-indigo-500 h-full" style="width: ${tpct}%"></div>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            });
+        }
+
+        function loadProblems() {
+            apiFetch('/api/problems').then(data => {
+                problemsData = data;
+                renderProblems();
+            });
+        }
+
+        function renderProblems() {
+            const search = document.getElementById('search-input').value.toLowerCase();
+            const filtered = problemsData.filter(p => p.name.toLowerCase().includes(search));
+
+            document.getElementById('problems-body').innerHTML = filtered.map(p => {
+                const nextDue = calculateDue(p.solved_date, p.revisions);
+                return `
+                    <tr class="hover:bg-slate-800/40">
+                        <td class="p-3 text-slate-500">${p.id}</td>
+                        <td class="p-3 font-semibold">${p.name}</td>
+                        <td class="p-3 text-slate-400">${p.topic}</td>
+                        <td class="p-3">${p.difficulty}</td>
+                        <td class="p-3">
+                            <select onchange="updateProgress(${p.id}, 'status', this.value)" class="bg-slate-800 rounded px-2 py-1">
+                                <option value="Todo" ${p.status === 'Todo' ? 'selected' : ''}>Todo</option>
+                                <option value="Hint-solved" ${p.status === 'Hint-solved' ? 'selected' : ''}>Hint-solved</option>
+                                <option value="Solved" ${p.status === 'Solved' ? 'selected' : ''}>Solved</option>
+                                <option value="Mastered" ${p.status === 'Mastered' ? 'selected' : ''}>Mastered</option>
+                            </select>
+                        </td>
+                        <td class="p-3">
+                            <input type="number" min="0" max="5" value="${p.revisions}" onchange="updateProgress(${p.id}, 'revisions', parseInt(this.value))" class="w-12 bg-slate-800 rounded text-center">
+                        </td>
+                        <td class="p-3 text-amber-400">${nextDue}</td>
+                        <td class="p-3">
+                            <input type="text" value="${p.pattern_notes || ''}" onchange="updateProgress(${p.id}, 'pattern_notes', this.value)" class="bg-transparent border-b border-transparent focus:border-indigo-500 outline-none w-full">
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function updateProgress(problemId, key, value) {
+            const prob = problemsData.find(p => p.id === problemId);
+            if (!prob) return;
+            prob[key] = value;
+            if (key === 'status' && (value === 'Solved' || value === 'Mastered') && !prob.solved_date) {
+                prob.solved_date = new Date().toISOString().split('T')[0];
+            }
+            apiFetch(`/api/progress/${problemId}`, { method: 'PUT', body: JSON.stringify(prob) }).then(loadDashboard);
+        }
+
+        function calculateDue(solvedDate, revisions) {
+            if (!solvedDate || revisions >= 5) return revisions >= 5 ? 'Mastered' : 'N/A';
+            const d = new Date(solvedDate);
+            d.setDate(d.getDate() + SPACING[Math.min(revisions, 4)]);
+            return d.toISOString().split('T')[0];
+        }
+
+        function loadRoadmap() {
+            apiFetch('/api/roadmap').then(roadmap => {
+                document.getElementById('view-roadmap').innerHTML = roadmap.map(r => `
+                    <div class="bg-slate-900/60 p-4 rounded-xl border border-slate-800 flex justify-between items-center">
+                        <div>
+                            <span class="text-xs px-2 py-0.5 bg-indigo-500/10 text-indigo-400 rounded font-semibold">Week ${r.week}</span>
+                            <h3 class="font-bold text-slate-200 mt-1">${r.topic}</h3>
+                            <p class="text-xs text-slate-400 mt-0.5">${r.patterns}</p>
+                        </div>
+                        <div class="text-xs text-amber-400 bg-amber-500/10 px-3 py-1.5 rounded-lg">Goal: ${r.goal}</div>
+                    </div>
+                `).join('');
+            });
+        }
+
+        function switchTab(tab) {
+            ['dashboard', 'problems', 'roadmap'].forEach(t => {
+                document.getElementById(`view-${t}`).classList.add('hidden');
+                document.getElementById(`tab-${t}`).classList.remove('bg-indigo-600', 'text-white');
+            });
+            document.getElementById(`view-${tab}`).classList.remove('hidden');
+            document.getElementById(`tab-${tab}`).classList.add('bg-indigo-600', 'text-white');
+        }
+
+        initApp();
+    </script>
+</body>
+</html>
