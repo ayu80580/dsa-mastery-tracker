@@ -3,9 +3,9 @@ const cors = require('cors');
 const { Pool } = require('pg');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const nodemailer = require('nodemailer');
 const cron = require('node-cron');
 const { GoogleGenerativeAI } = require('@google/generative-ai');
+const { Resend } = require('resend');
 
 const app = express();
 const JWT_SECRET = process.env.JWT_SECRET || 'dsa_tracker_secret_2026';
@@ -19,18 +19,9 @@ const pool = new Pool({
     ssl: { rejectUnauthorized: false }
 });
 
-// Initialize Free Gemini AI Client
-const genAI = process.env.GEMINI_API_KEY ? new GoogleGenerativeAI(process.env.GEMINI_API_KEY) : null;
+const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
 
-// Initialize Free Nodemailer Transporter (Gmail App Password or Resend)
-const transporter = nodemailer.createTransport({
-    service: 'gmail',
-    auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS
-    }
-});
-
+// Initialize Database Schema with Email Tracking Columns
 async function initDb() {
     try {
         await pool.query(`
@@ -41,6 +32,9 @@ async function initDb() {
                 password_hash TEXT NOT NULL,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             );
+            ALTER TABLE users ADD COLUMN IF NOT EXISTS last_track_status TEXT;
+            ALTER TABLE users ADD COLUMN IF NOT EXISTS last_email_date TEXT;
+
             CREATE TABLE IF NOT EXISTS problems (
                 id INT PRIMARY KEY,
                 week INT,
@@ -64,10 +58,18 @@ async function initDb() {
                 updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 UNIQUE(user_id, problem_id)
             );
+
+            CREATE TABLE IF NOT EXISTS roadmap (
+                week INT PRIMARY KEY,
+                phase TEXT,
+                topic TEXT,
+                patterns TEXT,
+                goal TEXT
+            );
         `);
-        console.log('Database schema ready with AI Coach support.');
+        console.log('Database schema verified with automated email trigger tracking.');
     } catch (err) {
-        console.error('Database init error:', err);
+        console.error('Database initialization failed:', err);
     }
 }
 initDb();
@@ -84,7 +86,31 @@ function authenticateToken(req, res, next) {
     });
 }
 
-// --- ADAPTIVE AI COACH ENGINE ---
+// Gemini AI API Helper with Model Fallbacks
+async function callGeminiAPI(promptText) {
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey) throw new Error("GEMINI_API_KEY missing in environment variables.");
+
+    const genAI = new GoogleGenerativeAI(apiKey);
+    const candidateModels = ["gemini-3.8-flash", "gemini-3.6-flash", "gemini-3.5-flash-lite"];
+
+    let lastError = null;
+    for (const modelName of candidateModels) {
+        try {
+            const model = genAI.getGenerativeModel({ model: modelName });
+            const result = await model.generateContent(promptText);
+            const response = await result.response;
+            const text = response.text();
+            if (text) return text.trim();
+        } catch (err) {
+            console.warn(`Gemini model ${modelName} failed:`, err.message);
+            lastError = err;
+        }
+    }
+    throw lastError || new Error("All Gemini models failed.");
+}
+
+// Adaptive Diagnostic Engine
 async function analyzeUserPerformanceAndAdapt(userId) {
     const progressRes = await pool.query(`
         SELECT p.id, p.name, p.topic, p.difficulty, p.priority, p.url,
@@ -99,7 +125,7 @@ async function analyzeUserPerformanceAndAdapt(userId) {
     const total = problems.length;
     const solved = problems.filter(p => p.status === 'Solved' || p.status === 'Mastered');
     
-    // Performance Metrics
+    // Evaluate struggle on Medium difficulty
     const mediumAttempted = problems.filter(p => p.difficulty === 'Medium' && p.status !== 'Todo');
     const mediumSolvedClean = mediumAttempted.filter(p => p.status === 'Solved' || p.status === 'Mastered');
     const mediumHintSolved = mediumAttempted.filter(p => p.status === 'Hint-solved');
@@ -107,7 +133,7 @@ async function analyzeUserPerformanceAndAdapt(userId) {
     const isStrugglingInMedium = mediumAttempted.length >= 2 && 
         (mediumHintSolved.length / mediumAttempted.length >= 0.35 || mediumSolvedClean.length / mediumAttempted.length < 0.45);
 
-    // Revisions Due Today
+    // Revisions Due Schedule
     const today = new Date().toISOString().split('T')[0];
     const intervals = [1, 3, 7, 21, 60];
     const revisionsDue = problems.filter(p => {
@@ -117,14 +143,14 @@ async function analyzeUserPerformanceAndAdapt(userId) {
         return d.toISOString().split('T')[0] <= today;
     });
 
-    // Adaptive Problem Queue
+    // Adaptive Recommendation Queue
     let recommendedQueue = [];
     let coachTrackStatus = "On Track";
     let adaptationReason = "Pacing optimal. Advance through core curriculum.";
 
     if (isStrugglingInMedium) {
         coachTrackStatus = "Pacing Adapted: Easy Stepping-Stone Mode";
-        adaptationReason = "Struggle detected on Medium problems. Difficulty scaled down to Easy foundational patterns.";
+        adaptationReason = "Struggle detected on Medium problems. Difficulty automatically scaled down to Easy foundational patterns.";
         recommendedQueue = problems.filter(p => p.difficulty === 'Easy' && p.status === 'Todo').slice(0, 3);
     } else {
         recommendedQueue = problems.filter(p => p.status === 'Todo' && p.priority === 'P1').slice(0, 3);
@@ -135,19 +161,12 @@ async function analyzeUserPerformanceAndAdapt(userId) {
 
     let aiFeedback = `Completed ${solved.length}/${total} problems. ${adaptationReason}`;
     
-    // Dynamically initialize Gemini API key on each call
-    const apiKey = process.env.GEMINI_API_KEY;
-    if (apiKey) {
+    if (process.env.GEMINI_API_KEY) {
         try {
-            const genAI = new GoogleGenerativeAI(apiKey);
-            const model = genAI.getGenerativeModel({ model: "gemini-3.8-flash" });
             const prompt = `You are a competitive programming coach. User stats: ${solved.length}/${total} solved. Current Track: ${coachTrackStatus}. Write a 2-sentence coaching directive for today.`;
-
-            const result = await model.generateContent(prompt);
-            const text = result.response.text();
-            if (text) aiFeedback = text.trim();
+            aiFeedback = await callGeminiAPI(prompt);
         } catch (e) {
-            console.warn("Gemini API call fallback:", e.message);
+            console.warn("Gemini AI fallback triggered:", e.message);
         }
     }
 
@@ -167,122 +186,43 @@ async function analyzeUserPerformanceAndAdapt(userId) {
     };
 }
 
-// --- COACH API ENDPOINTS ---
-app.get('/api/coach/insights', authenticateToken, async (req, res) => {
-    try {
-        const insights = await analyzeUserPerformanceAndAdapt(req.user.userId);
-        res.json(insights);
-    } catch (err) {
-        res.status(500).json({ error: err.message, answer: `Error: ${err.message}` });
-    }
-});
+// Send Email Helper Function
+async function sendCoachingEmail(user, insights, isAutoTrigger = false) {
+    if (!process.env.RESEND_API_KEY || !resend) return false;
 
-app.post('/api/coach/ask', authenticateToken, async (req, res) => {
-    try {
-        const { question } = req.body;
-        if (!question) return res.status(400).json({ error: "Question required" });
+    const subject = isAutoTrigger 
+        ? `⚠️ AI Coach Alert: Track Auto-Adjusted & Revision Plan`
+        : `🎯 Today's DSA Coaching Plan (${new Date().toLocaleDateString()})`;
 
-        const insights = await analyzeUserPerformanceAndAdapt(req.user.userId);
-        const apiKey = process.env.GEMINI_API_KEY;
+    await resend.emails.send({
+        from: 'DSA AI Coach <onboarding@resend.dev>',
+        to: user.email,
+        subject: subject,
+        html: `
+            <div style="font-family: Arial, sans-serif; background: #09090b; color: #f4f4f5; padding: 24px; border-radius: 12px;">
+                <h2 style="color: #10b981;">DSA AI Coach ${isAutoTrigger ? 'Auto-Trigger Briefing' : 'Daily Briefing'}</h2>
+                <p>Hi <strong>${user.name}</strong>,</p>
+                <p style="background: #18181b; padding: 12px; border-left: 4px solid #10b981; border-radius: 6px;">${insights.aiFeedback}</p>
+                
+                <h3 style="color: #06b6d4;">Track Status: ${insights.summary.trackStatus}</h3>
+                <p style="color: #a1a1aa;">${insights.summary.adaptationReason}</p>
 
-        if (!apiKey) {
-            return res.json({ 
-                answer: "⚠️ GEMINI_API_KEY missing in Render environment variables. Add your key from aistudio.google.com to enable live AI responses." 
-            });
-        }
+                <h4 style="color: #f59e0b;">1. Revisions Due Today (${insights.revisionsDue.length})</h4>
+                <ul>
+                    ${insights.revisionsDue.map(r => `<li><strong>${r.name}</strong> (${r.topic}) - Rev${r.revisions}/5</li>`).join('') || '<li>No revisions due today! 🎉</li>'}
+                </ul>
 
-        try {
-            const genAI = new GoogleGenerativeAI(apiKey);
-            const model = genAI.getGenerativeModel({ model: "gemini-3.8-flash" });
-            const prompt = `You are an elite DSA and software engineering coach. User progress: ${insights.summary.solvedCount}/${insights.summary.total} solved. Current Track: ${insights.summary.trackStatus}.
-User Question: "${question}"
-Provide a clear, encouraging, and actionable 2-3 sentence coaching response.`;
+                <h4 style="color: #6366f1;">2. Recommended Next Problems</h4>
+                <ul>
+                    ${insights.recommendedQueue.map(p => `<li><a href="${p.url}" style="color: #38bdf8; text-decoration: none;"><strong>${p.name}</strong></a> (${p.difficulty})</li>`).join('')}
+                </ul>
+            </div>
+        `
+    });
+    return true;
+}
 
-            const result = await model.generateContent(prompt);
-            const text = result.response.text();
-            res.json({ answer: text ? text.trim() : "Focus on mastering 1 pattern at a time!" });
-        } catch (aiErr) {
-            console.error("Gemini API Error:", aiErr.message);
-            res.json({ 
-                answer: `⚠️ Gemini API Error (${aiErr.message}). Check your GEMINI_API_KEY in Render!` 
-            });
-        }
-    } catch (err) {
-        res.status(500).json({ error: err.message, answer: `Server error: ${err.message}` });
-    }
-});
-
-app.post('/api/coach/send-email', authenticateToken, async (req, res) => {
-    try {
-        const userRes = await pool.query(`SELECT name, email FROM users WHERE id = $1`, [req.user.userId]);
-        const user = userRes.rows[0];
-        if (!user) return res.status(404).json({ error: "User not found" });
-
-        const insights = await analyzeUserPerformanceAndAdapt(req.user.userId);
-        
-        const mailOptions = {
-            from: `"DSA AI Coach" <${process.env.EMAIL_USER || 'coach@dsa-tracker.com'}>`,
-            to: user.email,
-            subject: `🎯 Today's DSA Coaching Plan & Revisions (${new Date().toLocaleDateString()})`,
-            html: `
-                <div style="font-family: Arial, sans-serif; background-color: #09090b; color: #f4f4f5; padding: 24px; border-radius: 16px;">
-                    <h2 style="color: #10b981;">DSA AI Coach Daily Briefing</h2>
-                    <p>Hi <strong>${user.name}</strong>,</p>
-                    <p style="background: #18181b; padding: 12px; border-left: 4px solid #10b981; border-radius: 8px;">${insights.aiFeedback}</p>
-                    
-                    <h3>Status: <span style="color: #06b6d4;">${insights.summary.trackStatus}</span></h3>
-                    <p>${insights.summary.adaptationReason}</p>
-
-                    <h4 style="color: #f59e0b;">1. Revisions Due Today (${insights.revisionsDue.length})</h4>
-                    <ul>
-                        ${insights.revisionsDue.map(r => `<li><strong>${r.name}</strong> (${r.topic}) - Rev ${r.revisions}/5</li>`).join('') || '<li>No revisions due today! 🎉</li>'}
-                    </ul>
-
-                    <h4 style="color: #6366f1;">2. Recommended Next Problems</h4>
-                    <ul>
-                        ${insights.recommendedQueue.map(p => `<li><a href="${p.url}" style="color: #38bdf8; text-decoration: none;"><strong>${p.name}</strong></a> (${p.difficulty} - ${p.topic})</li>`).join('')}
-                    </ul>
-
-                    <p style="margin-top: 24px; font-size: 12px; color: #71717a;">Keep pushing forward! One problem a day builds mastery.</p>
-                </div>
-            `
-        };
-
-        if (process.env.EMAIL_USER && process.env.EMAIL_PASS) {
-            await transporter.sendMail(mailOptions);
-            res.json({ success: true, message: `Coaching email sent to ${user.email}!` });
-        } else {
-            res.json({ success: true, message: "Email simulation successful! (Set EMAIL_USER and EMAIL_PASS in Render environment variables to send live emails)." });
-        }
-    } catch (err) {
-        res.status(500).json({ error: err.message });
-    }
-});
-
-// --- DAILY AUTOMATED CRON SCHEDULER (Runs every day at 8:00 AM) ---
-cron.schedule('0 8 * * *', async () => {
-    console.log('Running daily 8:00 AM AI Coach Email Dispatch...');
-    if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) return;
-
-    try {
-        const usersRes = await pool.query(`SELECT id, name, email FROM users`);
-        for (const user of usersRes.rows) {
-            const insights = await analyzeUserPerformanceAndAdapt(user.id);
-            if (insights.revisionsDue.length > 0 || insights.recommendedQueue.length > 0) {
-                await transporter.sendMail({
-                    from: `"DSA AI Coach" <${process.env.EMAIL_USER}>`,
-                    to: user.email,
-                    subject: `⏰ Daily DSA Practice Reminder & Revision Schedule`,
-                    html: `<p>Hi ${user.name}, your AI Coach has prepared today's plan: ${insights.aiFeedback}</p>`
-                });
-            }
-        }
-    } catch (e) {
-        console.error('Cron dispatch error:', e.message);
-    }
-});
-
-// Standard APIs
+// --- AUTHENTICATION APIS ---
 app.post('/api/auth/signup', async (req, res) => {
     try {
         const { name, email, password } = req.body;
@@ -319,6 +259,7 @@ app.post('/api/auth/login', async (req, res) => {
 
 app.get('/api/auth/me', authenticateToken, (req, res) => res.json({ user: req.user }));
 
+// --- PROGRESS APIS WITH REAL-TIME ADAPTIVE EMAIL AUTO-TRIGGER ---
 app.get('/api/problems', authenticateToken, async (req, res) => {
     try {
         const query = `
@@ -341,7 +282,7 @@ app.get('/api/problems', authenticateToken, async (req, res) => {
 app.put('/api/progress/:problemId', authenticateToken, async (req, res) => {
     try {
         const { status, solved_date, revisions, pattern_notes } = req.body;
-        const query = `
+        await pool.query(`
             INSERT INTO user_progress (user_id, problem_id, status, solved_date, revisions, pattern_notes, updated_at)
             VALUES ($1, $2, $3, $4, $5, $6, CURRENT_TIMESTAMP)
             ON CONFLICT (user_id, problem_id) DO UPDATE SET
@@ -350,9 +291,20 @@ app.put('/api/progress/:problemId', authenticateToken, async (req, res) => {
                 revisions = EXCLUDED.revisions,
                 pattern_notes = EXCLUDED.pattern_notes,
                 updated_at = CURRENT_TIMESTAMP
-        `;
-        await pool.query(query, [req.user.userId, req.params.problemId, status, solved_date, revisions || 0, pattern_notes]);
-        res.json({ success: true });
+        `, [req.user.userId, req.params.problemId, status, solved_date, revisions || 0, pattern_notes]);
+
+        // Evaluate if this progress update triggered a Track Shift
+        const insights = await analyzeUserPerformanceAndAdapt(req.user.userId);
+        const userRes = await pool.query(`SELECT name, email, last_track_status FROM users WHERE id = $1`, [req.user.userId]);
+        const user = userRes.rows[0];
+
+        if (user && insights.summary.trackStatus !== user.last_track_status) {
+            // Track changed! Update user track status and auto-send adaptive email
+            await pool.query(`UPDATE users SET last_track_status = $1 WHERE id = $2`, [insights.summary.trackStatus, req.user.userId]);
+            sendCoachingEmail(user, insights, true).catch(e => console.error("Auto email trigger error:", e.message));
+        }
+
+        res.json({ success: true, trackStatus: insights.summary.trackStatus });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
@@ -360,16 +312,16 @@ app.put('/api/progress/:problemId', authenticateToken, async (req, res) => {
 
 app.get('/api/dashboard', authenticateToken, async (req, res) => {
     try {
-        const summaryQuery = `
+        const summaryRes = await pool.query(`
             SELECT 
                 COUNT(p.id)::int as total,
                 SUM(CASE WHEN up.status IN ('Solved', 'Mastered') THEN 1 ELSE 0 END)::int as solved,
                 SUM(CASE WHEN up.revisions >= 5 OR up.status = 'Mastered' THEN 1 ELSE 0 END)::int as mastered
             FROM problems p
             LEFT JOIN user_progress up ON p.id = up.problem_id AND up.user_id = $1
-        `;
+        `, [req.user.userId]);
 
-        const topicQuery = `
+        const topicsRes = await pool.query(`
             SELECT 
                 p.topic,
                 COUNT(p.id)::int as total,
@@ -378,10 +330,7 @@ app.get('/api/dashboard', authenticateToken, async (req, res) => {
             LEFT JOIN user_progress up ON p.id = up.problem_id AND up.user_id = $1
             GROUP BY p.topic
             ORDER BY p.topic ASC
-        `;
-
-        const summaryRes = await pool.query(summaryQuery, [req.user.userId]);
-        const topicsRes = await pool.query(topicQuery, [req.user.userId]);
+        `, [req.user.userId]);
 
         res.json({ summary: summaryRes.rows[0] || {}, topics: topicsRes.rows || [] });
     } catch (err) {
@@ -395,6 +344,109 @@ app.get('/api/roadmap', authenticateToken, async (req, res) => {
         res.json(result.rows || []);
     } catch (err) {
         res.status(500).json({ error: err.message });
+    }
+});
+
+// --- AI COACH APIS ---
+app.get('/api/coach/insights', authenticateToken, async (req, res) => {
+    try {
+        const insights = await analyzeUserPerformanceAndAdapt(req.user.userId);
+        res.json(insights);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+app.post('/api/coach/ask', authenticateToken, async (req, res) => {
+    try {
+        const { question } = req.body;
+        if (!question) return res.status(400).json({ error: "Question required" });
+
+        const insights = await analyzeUserPerformanceAndAdapt(req.user.userId);
+        if (!process.env.GEMINI_API_KEY) {
+            return res.json({ answer: "⚠️ GEMINI_API_KEY missing in Render environment variables." });
+        }
+
+        try {
+            const prompt = `You are an elite DSA coach. User progress: ${insights.summary.solvedCount}/${insights.summary.total} solved. Current Track: ${insights.summary.trackStatus}.
+User Question: "${question}"
+Provide a clear, encouraging 2-3 sentence response.`;
+
+            const text = await callGeminiAPI(prompt);
+            res.json({ answer: text });
+        } catch (aiErr) {
+            res.json({ answer: `⚠️ Gemini API Error (${aiErr.message}). Check GEMINI_API_KEY in Render!` });
+        }
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+app.post('/api/coach/send-email', authenticateToken, async (req, res) => {
+    try {
+        const userRes = await pool.query(`SELECT name, email FROM users WHERE id = $1`, [req.user.userId]);
+        const user = userRes.rows[0];
+        if (!user) return res.status(404).json({ error: "User not found" });
+
+        const insights = await analyzeUserPerformanceAndAdapt(req.user.userId);
+        const sent = await sendCoachingEmail(user, insights, false);
+
+        if (sent) {
+            res.json({ success: true, message: `Coaching email sent to ${user.email}!` });
+        } else {
+            res.json({ success: false, message: "RESEND_API_KEY missing in Render environment variables." });
+        }
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// --- AUTOMATED DAILY CRON ENDPOINT (FOR FREE CRON-JOB.ORG PING) ---
+app.get('/api/cron/daily-briefing', async (req, res) => {
+    const today = new Date().toISOString().split('T')[0];
+    try {
+        const usersRes = await pool.query(`SELECT id, name, email, last_email_date FROM users`);
+        let emailsSent = 0;
+
+        for (const user of usersRes.rows) {
+            // Check if user hasn't received today's email briefing
+            if (user.last_email_date !== today) {
+                const insights = await analyzeUserPerformanceAndAdapt(user.id);
+                if (insights.revisionsDue.length > 0 || insights.recommendedQueue.length > 0) {
+                    const sent = await sendCoachingEmail(user, insights, false);
+                    if (sent) {
+                        await pool.query(`UPDATE users SET last_email_date = $1 WHERE id = $2`, [today, user.id]);
+                        emailsSent++;
+                    }
+                }
+            }
+        }
+        res.json({ success: true, message: `Automated run complete. ${emailsSent} emails dispatched.`, date: today });
+    } catch (err) {
+        console.error("Cron endpoint error:", err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Internal fallback cron
+cron.schedule('0 8 * * *', async () => {
+    console.log('Running internal daily 8:00 AM cron check...');
+    try {
+        const today = new Date().toISOString().split('T')[0];
+        const usersRes = await pool.query(`SELECT id, name, email, last_email_date FROM users`);
+        for (const user of usersRes.rows) {
+            if (user.last_email_date !== today) {
+                const insights = await analyzeUserPerformanceAndAdapt(user.id);
+                if (insights.revisionsDue.length > 0 || insights.recommendedQueue.length > 0) {
+                    const sent = await sendCoachingEmail(user, insights, false);
+                    if (sent) {
+                        await pool.query(`UPDATE users SET last_email_date = $1 WHERE id = $2`, [today, user.id]);
+                    }
+                }
+            }
+        }
+    } catch (e) {
+        console.error('Internal cron error:', e.message);
     }
 });
 
