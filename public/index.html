@@ -492,18 +492,30 @@
         }
 
         function askAiCoach() {
-            const q = document.getElementById('ai-question').value;
+            const qInput = document.getElementById('ai-question');
+            const q = qInput.value.trim();
             if (!q) return;
+            
             const ansBox = document.getElementById('ai-answer');
             ansBox.classList.remove('hidden');
             ansBox.innerText = "Coach thinking...";
 
-            apiFetch('/api/coach/ask', { method: 'POST', body: JSON.stringify({ question: q }) }).then(res => {
-                ansBox.innerText = res.answer;
-            });
+            apiFetch('/api/coach/ask', { method: 'POST', body: JSON.stringify({ question: q }) })
+                .then(res => {
+                    if (res && res.answer) {
+                        ansBox.innerText = res.answer;
+                    } else if (res && res.error) {
+                        ansBox.innerText = "⚠️ Error: " + res.error;
+                    } else {
+                        ansBox.innerText = "⚠️ Could not parse server response.";
+                    }
+                })
+                .catch(err => {
+                    ansBox.innerText = "⚠️ Network Error: " + err.message;
+                });
         }
 
-        function triggerCoachEmail() {
+      function triggerCoachEmail() {
             apiFetch('/api/coach/send-email', { method: 'POST' }).then(res => {
                 alert(res.message);
             });

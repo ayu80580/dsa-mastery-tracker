@@ -98,7 +98,6 @@ async function analyzeUserPerformanceAndAdapt(userId) {
     const problems = progressRes.rows;
     const total = problems.length;
     const solved = problems.filter(p => p.status === 'Solved' || p.status === 'Mastered');
-    const hintSolved = problems.filter(p => p.status === 'Hint-solved');
     
     // Performance Metrics
     const mediumAttempted = problems.filter(p => p.difficulty === 'Medium' && p.status !== 'Todo');
@@ -118,47 +117,37 @@ async function analyzeUserPerformanceAndAdapt(userId) {
         return d.toISOString().split('T')[0] <= today;
     });
 
-    // Adaptive Problem Queue Generation
+    // Adaptive Problem Queue
     let recommendedQueue = [];
     let coachTrackStatus = "On Track";
-    let adaptationReason = "Your current pacing is optimal. Continue with standard curriculum progression.";
+    let adaptationReason = "Pacing optimal. Advance through core curriculum.";
 
     if (isStrugglingInMedium) {
         coachTrackStatus = "Pacing Adapted: Easy Stepping-Stone Mode";
-        adaptationReason = "Detected struggle/hints on Medium problems. Automatically reduced recommendation difficulty to Easy foundational patterns to build confidence before advancing.";
-        
-        // Priority 1: Unsolved Easy problems in active topics
+        adaptationReason = "Struggle detected on Medium problems. Difficulty scaled down to Easy foundational patterns.";
         recommendedQueue = problems.filter(p => p.difficulty === 'Easy' && p.status === 'Todo').slice(0, 3);
     } else {
-        // Standard queue: Unsolved P1 problems
         recommendedQueue = problems.filter(p => p.status === 'Todo' && p.priority === 'P1').slice(0, 3);
         if (recommendedQueue.length < 3) {
             recommendedQueue = problems.filter(p => p.status === 'Todo').slice(0, 3);
         }
     }
 
-    // AI Dynamic Feedback Generation (Gemini 1.5 Flash Free)
-    let aiFeedback = `You have completed ${solved.length}/${total} problems (${Math.round((solved.length/total)*100)}%). ${adaptationReason}`;
+    let aiFeedback = `Completed ${solved.length}/${total} problems. ${adaptationReason}`;
     
-    if (genAI) {
+    // Dynamically initialize Gemini API key on each call
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (apiKey) {
         try {
+            const genAI = new GoogleGenerativeAI(apiKey);
             const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
-            const prompt = `You are an elite, encouraging competitive programming and DSA Coach. 
-            User Stats:
-            - Total Problems Solved: ${solved.length}/${total}
-            - Medium Problems Attempted: ${mediumAttempted.length}
-            - Medium Problems Solved Without Hints: ${mediumSolvedClean.length}
-            - Medium Problems Needing Hints: ${mediumHintSolved.length}
-            - Struggling in Medium: ${isStrugglingInMedium}
-            - Revisions Due Today: ${revisionsDue.length}
-            
-            Write a concise 2-sentence coaching directive for today. Tell them exactly what pattern to focus on and why their difficulty was set to ${coachTrackStatus}.`;
+            const prompt = `You are a competitive programming coach. User stats: ${solved.length}/${total} solved. Current Track: ${coachTrackStatus}. Write a 2-sentence coaching directive for today.`;
 
             const result = await model.generateContent(prompt);
-            const responseText = result.response.text();
-            if (responseText) aiFeedback = responseText.trim();
+            const text = result.response.text();
+            if (text) aiFeedback = text.trim();
         } catch (e) {
-            console.warn("Gemini AI API call fallback:", e.message);
+            console.warn("Gemini API call fallback:", e.message);
         }
     }
 
@@ -184,7 +173,7 @@ app.get('/api/coach/insights', authenticateToken, async (req, res) => {
         const insights = await analyzeUserPerformanceAndAdapt(req.user.userId);
         res.json(insights);
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        res.status(500).json({ error: err.message, answer: `Error: ${err.message}` });
     }
 });
 
@@ -194,21 +183,32 @@ app.post('/api/coach/ask', authenticateToken, async (req, res) => {
         if (!question) return res.status(400).json({ error: "Question required" });
 
         const insights = await analyzeUserPerformanceAndAdapt(req.user.userId);
-        let answer = "Remember: Master 1 pattern at a time, write clean code, and re-solve problems from a blank editor without looking at hints.";
+        const apiKey = process.env.GEMINI_API_KEY;
 
-        if (genAI) {
-            const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
-            const prompt = `You are a friendly DSA coach. User Progress: ${insights.summary.solvedCount}/${insights.summary.total} solved. Current Track: ${insights.summary.trackStatus}.
-            User Question: "${question}"
-            Provide a helpful, actionable 3-sentence response.`;
-
-            const result = await model.generateContent(prompt);
-            answer = result.response.text().trim();
+        if (!apiKey) {
+            return res.json({ 
+                answer: "⚠️ GEMINI_API_KEY missing in Render environment variables. Add your key from aistudio.google.com to enable live AI responses." 
+            });
         }
 
-        res.json({ answer });
+        try {
+            const genAI = new GoogleGenerativeAI(apiKey);
+            const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+            const prompt = `You are an elite DSA and software engineering coach. User progress: ${insights.summary.solvedCount}/${insights.summary.total} solved. Current Track: ${insights.summary.trackStatus}.
+User Question: "${question}"
+Provide a clear, encouraging, and actionable 2-3 sentence coaching response.`;
+
+            const result = await model.generateContent(prompt);
+            const text = result.response.text();
+            res.json({ answer: text ? text.trim() : "Focus on mastering 1 pattern at a time!" });
+        } catch (aiErr) {
+            console.error("Gemini API Error:", aiErr.message);
+            res.json({ 
+                answer: `⚠️ Gemini API Error (${aiErr.message}). Check your GEMINI_API_KEY in Render!` 
+            });
+        }
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        res.status(500).json({ error: err.message, answer: `Server error: ${err.message}` });
     }
 });
 
