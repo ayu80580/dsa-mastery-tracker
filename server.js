@@ -140,7 +140,7 @@ async function analyzeUserPerformanceAndAdapt(userId) {
     if (apiKey) {
         try {
             const genAI = new GoogleGenerativeAI(apiKey);
-            const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+            const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
             const prompt = `You are a competitive programming coach. User stats: ${solved.length}/${total} solved. Current Track: ${coachTrackStatus}. Write a 2-sentence coaching directive for today.`;
 
             const result = await model.generateContent(prompt);
