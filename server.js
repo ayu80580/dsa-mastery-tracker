@@ -193,7 +193,7 @@ app.post('/api/coach/ask', authenticateToken, async (req, res) => {
 
         try {
             const genAI = new GoogleGenerativeAI(apiKey);
-            const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+            const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
             const prompt = `You are an elite DSA and software engineering coach. User progress: ${insights.summary.solvedCount}/${insights.summary.total} solved. Current Track: ${insights.summary.trackStatus}.
 User Question: "${question}"
 Provide a clear, encouraging, and actionable 2-3 sentence coaching response.`;
