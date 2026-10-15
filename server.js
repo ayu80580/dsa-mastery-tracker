@@ -140,7 +140,7 @@ async function analyzeUserPerformanceAndAdapt(userId) {
     if (apiKey) {
         try {
             const genAI = new GoogleGenerativeAI(apiKey);
-            const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+            const model = genAI.getGenerativeModel({ model: "gemini-3.8-flash" });
             const prompt = `You are a competitive programming coach. User stats: ${solved.length}/${total} solved. Current Track: ${coachTrackStatus}. Write a 2-sentence coaching directive for today.`;
 
             const result = await model.generateContent(prompt);
@@ -193,7 +193,7 @@ app.post('/api/coach/ask', authenticateToken, async (req, res) => {
 
         try {
             const genAI = new GoogleGenerativeAI(apiKey);
-            const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+            const model = genAI.getGenerativeModel({ model: "gemini-3.8-flash" });
             const prompt = `You are an elite DSA and software engineering coach. User progress: ${insights.summary.solvedCount}/${insights.summary.total} solved. Current Track: ${insights.summary.trackStatus}.
 User Question: "${question}"
 Provide a clear, encouraging, and actionable 2-3 sentence coaching response.`;
