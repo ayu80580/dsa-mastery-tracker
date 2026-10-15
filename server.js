@@ -1,55 +1,62 @@
 const express = require('express');
 const cors = require('cors');
-const sqlite3 = require('sqlite3').verbose();
+const { Pool } = require('pg');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const path = require('path');
 
 const app = express();
 const JWT_SECRET = process.env.JWT_SECRET || 'dsa_tracker_secret_2026';
-const DB_PATH = path.join(__dirname, 'dsa_tracker.db');
 
 app.use(cors());
 app.use(express.json());
 app.use(express.static('public'));
 
-const db = new sqlite3.Database(DB_PATH);
-
-db.serialize(() => {
-    db.run(`CREATE TABLE IF NOT EXISTS users (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        name TEXT NOT NULL,
-        email TEXT UNIQUE NOT NULL,
-        password_hash TEXT NOT NULL,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-    )`);
-
-    db.run(`CREATE TABLE IF NOT EXISTS user_progress (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        user_id INTEGER,
-        problem_id INTEGER,
-        status TEXT DEFAULT 'Todo',
-        solved_date TEXT,
-        time_min INTEGER,
-        revisions INTEGER DEFAULT 0,
-        pattern_notes TEXT,
-        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        UNIQUE(user_id, problem_id)
-    )`);
-
-    db.run(`CREATE TABLE IF NOT EXISTS contest_logs (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        user_id INTEGER,
-        date TEXT,
-        type TEXT,
-        name TEXT,
-        qs_solved INTEGER,
-        rank INTEGER,
-        rating INTEGER,
-        mistake TEXT,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-    )`);
+const pool = new Pool({
+    connectionString: process.env.DATABASE_URL,
+    ssl: { rejectUnauthorized: false }
 });
+
+async function initDb() {
+    try {
+        await pool.query(`
+            CREATE TABLE IF NOT EXISTS users (
+                id SERIAL PRIMARY KEY,
+                name TEXT NOT NULL,
+                email TEXT UNIQUE NOT NULL,
+                password_hash TEXT NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            );
+            CREATE TABLE IF NOT EXISTS user_progress (
+                id SERIAL PRIMARY KEY,
+                user_id INT REFERENCES users(id),
+                problem_id INT REFERENCES problems(id),
+                status TEXT DEFAULT 'Todo',
+                solved_date TEXT,
+                time_min INT,
+                revisions INT DEFAULT 0,
+                pattern_notes TEXT,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                UNIQUE(user_id, problem_id)
+            );
+            CREATE TABLE IF NOT EXISTS contest_logs (
+                id SERIAL PRIMARY KEY,
+                user_id INT REFERENCES users(id),
+                date TEXT,
+                type TEXT,
+                name TEXT,
+                qs_solved INT,
+                rank INT,
+                rating INT,
+                mistake TEXT,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            );
+        `);
+        console.log('Database tables ready.');
+    } catch (err) {
+        console.error('Database initialization failed:', err);
+    }
+}
+initDb();
 
 function authenticateToken(req, res, next) {
     const authHeader = req.headers['authorization'];
@@ -63,95 +70,123 @@ function authenticateToken(req, res, next) {
     });
 }
 
-// Auth API
-app.post('/api/auth/signup', (req, res) => {
-    const { name, email, password } = req.body;
-    if (!name || !email || !password) return res.status(400).json({ error: 'All fields required' });
+// Auth APIs
+app.post('/api/auth/signup', async (req, res) => {
+    try {
+        const { name, email, password } = req.body;
+        if (!name || !email || !password) return res.status(400).json({ error: 'All fields required' });
 
-    const hash = bcrypt.hashSync(password, 10);
-    db.run(`INSERT INTO users (name, email, password_hash) VALUES (?, ?, ?)`, [name, email, hash], function(err) {
-        if (err) return res.status(400).json({ error: 'Email already exists' });
-        const token = jwt.sign({ userId: this.lastID, name, email }, JWT_SECRET, { expiresIn: '30d' });
-        res.json({ token, user: { id: this.lastID, name, email } });
-    });
+        const hash = bcrypt.hashSync(password, 10);
+        const result = await pool.query(
+            `INSERT INTO users (name, email, password_hash) VALUES ($1, $2, $3) RETURNING id`,
+            [name, email, hash]
+        );
+        const userId = result.rows[0].id;
+        const token = jwt.sign({ userId, name, email }, JWT_SECRET, { expiresIn: '30d' });
+        res.json({ token, user: { id: userId, name, email } });
+    } catch (err) {
+        if (err.code === '23505') return res.status(400).json({ error: 'Email already registered' });
+        res.status(500).json({ error: err.message });
+    }
 });
 
-app.post('/api/auth/login', (req, res) => {
-    const { email, password } = req.body;
-    db.get(`SELECT * FROM users WHERE email = ?`, [email], (err, user) => {
-        if (err || !user || !bcrypt.compareSync(password, user.password_hash)) {
+app.post('/api/auth/login', async (req, res) => {
+    try {
+        const { email, password } = req.body;
+        const result = await pool.query(`SELECT * FROM users WHERE email = $1`, [email]);
+        const user = result.rows[0];
+        if (!user || !bcrypt.compareSync(password, user.password_hash)) {
             return res.status(400).json({ error: 'Invalid credentials' });
         }
         const token = jwt.sign({ userId: user.id, name: user.name, email: user.email }, JWT_SECRET, { expiresIn: '30d' });
         res.json({ token, user: { id: user.id, name: user.name, email: user.email } });
-    });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
 });
 
 app.get('/api/auth/me', authenticateToken, (req, res) => res.json({ user: req.user }));
 
-// Problems & Progress
-app.get('/api/problems', authenticateToken, (req, res) => {
-    const query = `
-        SELECT p.*, 
-               COALESCE(up.status, 'Todo') as status,
-               up.solved_date,
-               COALESCE(up.revisions, 0) as revisions,
-               up.pattern_notes
-        FROM problems p
-        LEFT JOIN user_progress up ON p.id = up.problem_id AND up.user_id = ?
-        ORDER BY p.id ASC
-    `;
-    db.all(query, [req.user.userId], (err, rows) => res.json(rows || []));
+// Problems & User Progress APIs
+app.get('/api/problems', authenticateToken, async (req, res) => {
+    try {
+        const query = `
+            SELECT p.*, 
+                   COALESCE(up.status, 'Todo') as status,
+                   up.solved_date,
+                   COALESCE(up.revisions, 0) as revisions,
+                   up.pattern_notes
+            FROM problems p
+            LEFT JOIN user_progress up ON p.id = up.problem_id AND up.user_id = $1
+            ORDER BY p.id ASC
+        `;
+        const result = await pool.query(query, [req.user.userId]);
+        res.json(result.rows || []);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
 });
 
-app.put('/api/progress/:problemId', authenticateToken, (req, res) => {
-    const { status, solved_date, revisions, pattern_notes } = req.body;
-    const query = `
-        INSERT INTO user_progress (user_id, problem_id, status, solved_date, revisions, pattern_notes, updated_at)
-        VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
-        ON CONFLICT(user_id, problem_id) DO UPDATE SET
-            status = excluded.status,
-            solved_date = excluded.solved_date,
-            revisions = excluded.revisions,
-            pattern_notes = excluded.pattern_notes,
-            updated_at = CURRENT_TIMESTAMP
-    `;
-    db.run(query, [req.user.userId, req.params.problemId, status, solved_date, revisions, pattern_notes], (err) => {
+app.put('/api/progress/:problemId', authenticateToken, async (req, res) => {
+    try {
+        const { status, solved_date, revisions, pattern_notes } = req.body;
+        const query = `
+            INSERT INTO user_progress (user_id, problem_id, status, solved_date, revisions, pattern_notes, updated_at)
+            VALUES ($1, $2, $3, $4, $5, $6, CURRENT_TIMESTAMP)
+            ON CONFLICT (user_id, problem_id) DO UPDATE SET
+                status = EXCLUDED.status,
+                solved_date = EXCLUDED.solved_date,
+                revisions = EXCLUDED.revisions,
+                pattern_notes = EXCLUDED.pattern_notes,
+                updated_at = CURRENT_TIMESTAMP
+        `;
+        await pool.query(query, [req.user.userId, req.params.problemId, status, solved_date, revisions || 0, pattern_notes]);
         res.json({ success: true });
-    });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
 });
 
-// Dashboard Analytics
-app.get('/api/dashboard', authenticateToken, (req, res) => {
-    const summaryQuery = `
-        SELECT 
-            COUNT(p.id) as total,
-            SUM(CASE WHEN up.status IN ('Solved', 'Mastered') THEN 1 ELSE 0 END) as solved,
-            SUM(CASE WHEN up.revisions >= 5 OR up.status = 'Mastered' THEN 1 ELSE 0 END) as mastered
-        FROM problems p
-        LEFT JOIN user_progress up ON p.id = up.problem_id AND up.user_id = ?
-    `;
+// Dashboard Analytics API
+app.get('/api/dashboard', authenticateToken, async (req, res) => {
+    try {
+        const summaryQuery = `
+            SELECT 
+                COUNT(p.id)::int as total,
+                SUM(CASE WHEN up.status IN ('Solved', 'Mastered') THEN 1 ELSE 0 END)::int as solved,
+                SUM(CASE WHEN up.revisions >= 5 OR up.status = 'Mastered' THEN 1 ELSE 0 END)::int as mastered
+            FROM problems p
+            LEFT JOIN user_progress up ON p.id = up.problem_id AND up.user_id = $1
+        `;
 
-    const topicQuery = `
-        SELECT 
-            p.topic,
-            COUNT(p.id) as total,
-            SUM(CASE WHEN up.status IN ('Solved', 'Mastered') THEN 1 ELSE 0 END) as solved
-        FROM problems p
-        LEFT JOIN user_progress up ON p.id = up.problem_id AND up.user_id = ?
-        GROUP BY p.topic
-    `;
+        const topicQuery = `
+            SELECT 
+                p.topic,
+                COUNT(p.id)::int as total,
+                SUM(CASE WHEN up.status IN ('Solved', 'Mastered') THEN 1 ELSE 0 END)::int as solved
+            FROM problems p
+            LEFT JOIN user_progress up ON p.id = up.problem_id AND up.user_id = $1
+            GROUP BY p.topic
+            ORDER BY p.topic ASC
+        `;
 
-    db.get(summaryQuery, [req.user.userId], (err, summary) => {
-        db.all(topicQuery, [req.user.userId], (err, topics) => {
-            res.json({ summary: summary || {}, topics: topics || [] });
-        });
-    });
+        const summaryRes = await pool.query(summaryQuery, [req.user.userId]);
+        const topicsRes = await pool.query(topicQuery, [req.user.userId]);
+
+        res.json({ summary: summaryRes.rows[0] || {}, topics: topicsRes.rows || [] });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
 });
 
-app.get('/api/roadmap', authenticateToken, (req, res) => {
-    db.all(`SELECT * FROM roadmap ORDER BY week ASC`, [], (err, rows) => res.json(rows || []));
+app.get('/api/roadmap', authenticateToken, async (req, res) => {
+    try {
+        const result = await pool.query(`SELECT * FROM roadmap ORDER BY week ASC`);
+        res.json(result.rows || []);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
 });
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+app.listen(PORT, () => console.log(`Server listening on port ${PORT}`));
