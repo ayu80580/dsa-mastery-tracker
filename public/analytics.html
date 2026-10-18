@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>DSA Engine | Telemetry Analytics</title>
 
-    <!-- CUSTOM TAB FAVICON LOGO -->
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2310b981' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'><polygon points='12 2 2 7 12 12 22 7 12 2'/><polyline points='2 17 12 22 22 17'/><polyline points='2 12 12 17 22 12'/></svg>">
 
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
@@ -22,7 +21,7 @@
 </head>
 <body class="min-h-screen flex flex-col">
 
-    <!-- NAVBAR -->
+    <!-- GLOBAL NAVBAR -->
     <nav class="sticky top-0 z-50 glass-card border-b border-obsidian-800 px-6 py-3.5 flex items-center justify-between">
         <div class="flex items-center gap-3">
             <div class="p-2 bg-emerald-500/10 text-emerald-400 rounded-xl border border-emerald-500/20">
@@ -43,6 +42,7 @@
         <button onclick="logout()" class="px-3.5 py-1.5 bg-obsidian-900 text-slate-400 rounded-xl border border-obsidian-800 hover:text-white text-xs font-bold">Logout</button>
     </nav>
 
+    <!-- MAIN CONTENT -->
     <main class="max-w-7xl mx-auto px-6 py-8 flex-1 w-full space-y-8">
         
         <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -51,6 +51,7 @@
                 <p class="text-xs text-slate-400 mt-1">Algorithmic weakness radar & topic completion metrics</p>
             </div>
 
+            <!-- Track Filter Dropdown -->
             <select id="analytics-track" onchange="loadAnalytics()" class="bg-obsidian-900 border border-obsidian-800 text-xs text-slate-200 font-bold px-3 py-2 rounded-xl outline-none focus:border-emerald-500">
                 <option value="all">All Tracks Aggregated</option>
                 <option value="beginner">Beginner Track</option>
@@ -59,6 +60,7 @@
             </select>
         </div>
 
+        <!-- CHARTS GRID -->
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
             
             <div class="glass-card p-6 rounded-3xl space-y-4">
@@ -99,8 +101,17 @@
             fetch(`/api/analytics/deep?track=${track}`, {
                 headers: { 'Authorization': `Bearer ${jwtToken}` }
             })
-            .then(r => r.json())
+            .then(res => {
+                if (res.status === 401 || res.status === 403) {
+                    localStorage.removeItem('dsa_jwt');
+                    window.location.href = '/';
+                    return null;
+                }
+                return res.json();
+            })
             .then(data => {
+                if (!data) return;
+
                 const topics = (data.topics || []).map(t => t.topic);
                 const solved = (data.topics || []).map(t => t.solved);
                 const hints = (data.topics || []).map(t => t.hint_used);
@@ -108,6 +119,7 @@
                 Chart.defaults.color = '#a1a1aa';
                 Chart.defaults.font.family = 'Inter';
 
+                // Topic Chart
                 const ctxBar = document.getElementById('topicChart').getContext('2d');
                 if (topicChartInstance) topicChartInstance.destroy();
 
@@ -133,6 +145,7 @@
                     }
                 });
 
+                // Hint Radar Chart
                 const ctxRadar = document.getElementById('hintChart').getContext('2d');
                 if (hintChartInstance) hintChartInstance.destroy();
 
@@ -163,7 +176,8 @@
                         plugins: { legend: { display: false } }
                     }
                 });
-            });
+            })
+            .catch(err => console.error("Analytics fetch error:", err));
         }
 
         function logout() { localStorage.removeItem('dsa_jwt'); window.location.href = '/'; }

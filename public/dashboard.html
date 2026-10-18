@@ -193,7 +193,7 @@
                 cell.innerText = day;
 
                 if (day === now.getDate()) cell.classList.add('border-emerald-500', 'text-emerald-400');
-                if (solvedDatesMap[dayStr]) cell.classList.add('bg-emerald-500/20', 'text-emerald-300', 'border-emerald-500/50');
+                if (solvedDatesMap && solvedDatesMap[dayStr]) cell.classList.add('bg-emerald-500/20', 'text-emerald-300', 'border-emerald-500/50');
 
                 container.appendChild(cell);
             }
@@ -202,8 +202,18 @@
         function loadDashboard() {
             const track = document.getElementById('track-filter').value;
             fetch(`/api/dashboard?track=${track}`, { headers: { 'Authorization': `Bearer ${jwtToken}` } })
-                .then(r => r.json())
+                .then(r => {
+                    if (r.status === 401 || r.status === 403) {
+                        localStorage.removeItem('dsa_jwt');
+                        window.location.href = '/';
+                        return null;
+                    }
+                    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+                    return r.json();
+                })
                 .then(data => {
+                    if (!data || !data.summary) return;
+
                     document.getElementById('streak-val').innerText = data.summary.streak || 0;
                     document.getElementById('total-val').innerText = data.summary.total || 0;
                     document.getElementById('solved-val').innerText = data.summary.solvedCount || 0;
@@ -240,6 +250,9 @@
                     } else {
                         dueContainer.innerHTML = `<p class="text-xs text-slate-500">No revisions due today! 🎉</p>`;
                     }
+                })
+                .catch(err => {
+                    console.error("Dashboard load error:", err);
                 });
         }
 
