@@ -1,107 +1,146 @@
 const { Pool } = require('pg');
 const XLSX = require('xlsx');
-const path = require('path');
 const fs = require('fs');
+const path = require('path');
 
+// Configure PostgreSQL connection pool with SSL
 const pool = new Pool({
     connectionString: process.env.DATABASE_URL,
-    ssl: { rejectUnauthorized: false }
+    ssl: process.env.DATABASE_URL ? { rejectUnauthorized: false } : false
 });
 
-async function seedTierFile(filePath, tierName) {
+// Helper to safely parse numbers without producing NaN
+function safeParseInt(val, fallback = 0) {
+    if (val === null || val === undefined) return fallback;
+    const parsed = parseInt(val, 10);
+    return isNaN(parsed) ? fallback : parsed;
+}
+
+// Ingest an Excel file safely into the database
+async function seedTierFile(filePath, defaultTrackSlug = 'beginner') {
     if (!fs.existsSync(filePath)) {
-        console.log(`ℹ️ File ${path.basename(filePath)} not found. Tier '${tierName}' remains in BETA/Coming Soon.`);
-        return;
+        console.warn(`File not found: ${filePath}, skipping...`);
+        return 0;
     }
 
-    console.log(`⚡ Seeding tier '${tierName}' from ${path.basename(filePath)}...`);
-    const workbook = XLSX.readFile(filePath, { cellDates: true, cellStyles: true });
+    const workbook = XLSX.readFile(filePath, { cellDates: true });
+    const sheetName = workbook.Sheets['Problems'] ? 'Problems' : workbook.SheetNames[0];
+    const sheet = workbook.Sheets[sheetName];
+    if (!sheet) return 0;
 
-    for (const sheetName of workbook.SheetNames) {
-        const sheet = workbook.Sheets[sheetName];
-        const range = XLSX.utils.decode_range(sheet['!ref']);
+    const rows = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+    let imported = 0;
 
-        for (let r = range.s.r + 1; r <= range.e.r; r++) {
-            const idCell = sheet[XLSX.utils.encode_cell({ r, c: 0 })];
-            const weekCell = sheet[XLSX.utils.encode_cell({ r, c: 1 })];
-            const topicCell = sheet[XLSX.utils.encode_cell({ r, c: 2 })];
-            const nameCell = sheet[XLSX.utils.encode_cell({ r, c: 3 })];
-            const diffCell = sheet[XLSX.utils.encode_cell({ r, c: 4 })];
-            const prioCell = sheet[XLSX.utils.encode_cell({ r, c: 5 })];
+    for (let r = 1; r < rows.length; r++) {
+        const row = rows[r];
+        if (!row || row.length < 2) continue;
 
-            if (idCell && idCell.v && nameCell && nameCell.v) {
-                const id = parseInt(idCell.v);
-                const week = weekCell ? parseInt(weekCell.v) : 1;
-                const topic = topicCell ? String(topicCell.v) : 'General';
-                const name = String(nameCell.v);
-                const difficulty = diffCell ? String(diffCell.v) : 'Easy';
-                const priority = prioCell ? String(prioCell.v) : 'P2';
+        // Extract ID and skip if NaN or missing
+        const rawId = row[0];
+        const parsedId = safeParseInt(rawId, null);
+        
+        // If ID cell is empty or non-numeric (e.g. text/headers), generate or fallback safely
+        const id = (parsedId !== null && parsedId > 0) ? parsedId : (r + 10000);
+        
+        // Safely parse week (defaults to 1 if NaN)
+        const week = safeParseInt(row[1], 1);
+        
+        const topic = row[2] ? String(row[2]).trim() : 'General';
+        const name = row[3] ? String(row[3]).trim() : '';
+        
+        // Skip row if problem name is empty
+        if (!name || name.toLowerCase() === 'problem (click to open)') continue;
 
-                let url = '';
-                if (nameCell.l && nameCell.l.Target) {
-                    url = nameCell.l.Target;
-                } else {
-                    const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
-                    url = `https://leetcode.com/problems/${slug}/`;
-                }
+        const difficulty = row[4] ? String(row[4]).trim() : 'Easy';
+        const priority = row[5] ? String(row[5]).trim() : 'P2';
+        let url = row[6] ? String(row[6]).trim() : '';
+        const trackLevel = row[7] ? String(row[7]).toLowerCase().trim() : defaultTrackSlug;
 
-                await pool.query(
-                    `INSERT INTO problems (id, tier, week, topic, name, difficulty, priority, url)
-                     VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-                     ON CONFLICT (id) DO UPDATE SET
-                        tier = EXCLUDED.tier,
-                        week = EXCLUDED.week,
-                        topic = EXCLUDED.topic,
-                        name = EXCLUDED.name,
-                        difficulty = EXCLUDED.difficulty,
-                        priority = EXCLUDED.priority,
-                        url = EXCLUDED.url`,
-                    [id, tierName, week, topic, name, difficulty, priority, url]
-                );
-            }
+        if (!url || !url.startsWith('http')) {
+            const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+            url = `https://leetcode.com/problems/${slug}/`;
         }
+
+        // Execute parameterized query guaranteed to have valid integer types
+        await pool.query(`
+            INSERT INTO problems (id, week, topic, name, difficulty, priority, url, track_level)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+            ON CONFLICT (id) DO UPDATE SET
+                week = EXCLUDED.week,
+                topic = EXCLUDED.topic,
+                name = EXCLUDED.name,
+                difficulty = EXCLUDED.difficulty,
+                priority = EXCLUDED.priority,
+                url = EXCLUDED.url,
+                track_level = EXCLUDED.track_level
+        `, [id, week, topic, name, difficulty, priority, url, trackLevel]);
+
+        imported++;
     }
-    console.log(`✅ Successfully loaded tier '${tierName}'!`);
+
+    return imported;
 }
 
 async function seedAll() {
-    await pool.query(`
-        CREATE TABLE IF NOT EXISTS problems (
-            id INT PRIMARY KEY,
-            tier TEXT DEFAULT 'Beginner',
-            week INT,
-            topic TEXT,
-            name TEXT,
-            difficulty TEXT,
-            priority TEXT,
-            url TEXT
-        );
-        ALTER TABLE problems ADD COLUMN IF NOT EXISTS tier TEXT DEFAULT 'Beginner';
-        ALTER TABLE problems ADD COLUMN IF NOT EXISTS url TEXT;
-    `);
+    console.log('⚡ Initializing Database Schema...');
+    
+    try {
+        // Ensure Database Tables Exist
+        await pool.query(`
+            CREATE TABLE IF NOT EXISTS users (
+                id SERIAL PRIMARY KEY,
+                name TEXT NOT NULL,
+                email TEXT UNIQUE NOT NULL,
+                password_hash TEXT NOT NULL,
+                tier_access TEXT DEFAULT 'pro',
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            );
 
-    // Check single workbook with sheets OR individual tier files
-    const mainExcel = path.join(__dirname, 'DSA_Mastery_Tracker.xlsx');
-    if (fs.existsSync(mainExcel)) {
-        console.log("Found unified workbook: DSA_Mastery_Tracker.xlsx");
-        const workbook = XLSX.readFile(mainExcel, { cellDates: true, cellStyles: true });
+            CREATE TABLE IF NOT EXISTS problems (
+                id INT PRIMARY KEY,
+                week INT,
+                topic TEXT,
+                name TEXT,
+                difficulty TEXT,
+                priority TEXT,
+                url TEXT,
+                track_level TEXT DEFAULT 'beginner'
+            );
+
+            CREATE TABLE IF NOT EXISTS user_progress (
+                id SERIAL PRIMARY KEY,
+                user_id INT REFERENCES users(id),
+                problem_id INT REFERENCES problems(id),
+                status TEXT DEFAULT 'Todo',
+                solved_date TEXT,
+                time_min INT DEFAULT 0,
+                revisions INT DEFAULT 0,
+                pattern_notes TEXT,
+                code_snippet TEXT,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                UNIQUE(user_id, problem_id)
+            );
+        `);
+
+        // Scan root directory for all .xlsx files
+        const rootFiles = fs.readdirSync(__dirname).filter(f => f.endsWith('.xlsx') && !f.startsWith('~$'));
         
-        for (const sheetName of workbook.SheetNames) {
-            let tier = 'Beginner';
-            if (sheetName.toLowerCase().includes('inter')) tier = 'Intermediate';
-            if (sheetName.toLowerCase().includes('master')) tier = 'Mastery';
-            await seedTierFile(mainExcel, tier);
-        }
-    } else {
-        await seedTierFile(path.join(__dirname, 'Roadmap_Beginner.xlsx'), 'Beginner');
-        await seedTierFile(path.join(__dirname, 'Roadmap_Intermediate.xlsx'), 'Intermediate');
-        await seedTierFile(path.join(__dirname, 'Roadmap_Mastery.xlsx'), 'Mastery');
-    }
+        for (const file of rootFiles) {
+            let trackSlug = file.replace(/\.xlsx$/i, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-\vert{}-$)/g, '');
+            if (trackSlug.includes('mastery') || trackSlug.includes('tracker')) trackSlug = 'beginner';
 
-    await pool.end();
+            console.log(`⚡ Seeding track '${trackSlug}' from ${file}...`);
+            const count = await seedTierFile(path.join(__dirname, file), trackSlug);
+            console.log(`✅ Successfully seeded ${count} problems for '${trackSlug}'.`);
+        }
+
+        console.log('🎉 Seeding process completed successfully!');
+    } catch (err) {
+        console.error('❌ Seeding Error:', err);
+        process.exit(1);
+    } finally {
+        await pool.end();
+    }
 }
 
-seedAll().catch(err => {
-    console.error('Seeding error:', err);
-    process.exit(1);
-});
+seedAll();
