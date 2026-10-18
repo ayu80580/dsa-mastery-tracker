@@ -3,14 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DSA Mastery Engine | AI Coach Dashboard</title>
+    <title>DSA Mastery Engine | Multi-Tier AI Platform</title>
 
-    <!-- TAB FAVICON LOGO -->
-    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='22' fill='%2309090b'/><path d='M30 35 L15 50 L30 65' stroke='%2310b981' stroke-width='9' stroke-linecap='round' stroke-linejoin='round' fill='none'/><path d='M70 35 L85 50 L70 65' stroke='%2306b6d4' stroke-width='9' stroke-linecap='round' stroke-linejoin='round' fill='none'/><path d='M58 28 L42 72' stroke='%236366f1' stroke-width='8' stroke-linecap='round' fill='none'/></svg>">
+    <!-- BRAND TAB FAVICON -->
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='22' fill='%2309090b'/><path d='M30 35 L15 50 L30 65' stroke='%2310b981' stroke-width='9' stroke-linecap='round' stroke-linejoin='round' fill='none'/><path d='M70 35 L85 50 L70 65' stroke='%2306b6d4' stroke-width='9' stroke-linecap='round' stroke-linejoin='round' fill='none'/><path d='M58 28 L42 72' stroke='%238b5cf6' stroke-width='8' stroke-linecap='round' fill='none'/></svg>">
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
 
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
@@ -23,7 +23,7 @@
             theme: {
                 extend: {
                     fontFamily: {
-                        sans: ['Inter', 'sans-serif'],
+                        sans: ['"Plus Jakarta Sans"', 'sans-serif'],
                         mono: ['"JetBrains Mono"', 'monospace'],
                     },
                     colors: {
@@ -44,24 +44,30 @@
         body {
             background-color: #09090b;
             color: #f4f4f5;
-            font-family: 'Inter', sans-serif;
-            background-image: 
-                radial-gradient(at 0% 0%, rgba(16, 185, 129, 0.12) 0px, transparent 50%),
-                radial-gradient(at 100% 0%, rgba(6, 182, 212, 0.10) 0px, transparent 50%),
-                radial-gradient(at 50% 100%, rgba(99, 102, 241, 0.10) 0px, transparent 50%);
-            background-attachment: fixed;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            overflow-x: hidden;
+        }
+
+        #cyber-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: -1;
+            pointer-events: none;
         }
 
         .glass-card {
-            background: rgba(24, 24, 27, 0.7);
-            backdrop-filter: blur(16px);
-            -webkit-backdrop-filter: blur(16px);
-            border: 1px solid rgba(255, 255, 255, 0.07);
+            background: rgba(24, 24, 27, 0.65);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
         }
 
         .glass-card-glow {
-            box-shadow: 0 0 30px rgba(16, 185, 129, 0.12), 0 10px 30px rgba(0, 0, 0, 0.5);
+            box-shadow: 0 0 35px rgba(16, 185, 129, 0.15), 0 10px 30px rgba(0, 0, 0, 0.5);
         }
 
         .glass-card-hover { transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1); }
@@ -76,20 +82,31 @@
         ::-webkit-scrollbar { width: 6px; height: 6px; }
         ::-webkit-scrollbar-track { background: #09090b; }
         ::-webkit-scrollbar-thumb { background: #27272a; border-radius: 9999px; }
+
+        @keyframes scanline {
+            0% { transform: translateY(-100%); }
+            100% { transform: translateY(1000%); }
+        }
+        .scanline-effect {
+            animation: scanline 8s linear infinite;
+        }
     </style>
 </head>
 
 <body class="min-h-screen pb-20 flex flex-col font-sans">
 
+    <!-- BACKGROUND CYBER CANVAS ANIMATION -->
+    <canvas id="cyber-canvas"></canvas>
+
     <!-- FLOATING TOAST CONTAINER -->
     <div id="toast-container" class="fixed bottom-6 right-6 z-50 flex flex-col gap-3 pointer-events-none"></div>
 
-    <!-- COMMAND PALETTE (CMD+K / CTRL+K) -->
+    <!-- COMMAND PALETTE (CMD+K) -->
     <div id="command-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-obsidian-950/80 backdrop-blur-md p-4">
         <div class="glass-card rounded-3xl w-full max-w-2xl border border-emerald-500/30 shadow-2xl overflow-hidden flex flex-col max-h-[80vh]">
             <div class="p-4 border-b border-obsidian-800 flex items-center gap-3 bg-obsidian-900/90">
                 <i data-lucide="search" class="w-5 h-5 text-emerald-400"></i>
-                <input type="text" id="cmd-search" oninput="filterCommandPalette()" placeholder="Search problem by name, topic, or key logic pattern..." class="w-full bg-transparent text-sm text-slate-100 outline-none font-medium">
+                <input type="text" id="cmd-search" oninput="filterCommandPalette()" placeholder="Search problem, topic, or key logic pattern..." class="w-full bg-transparent text-sm text-slate-100 outline-none font-medium">
                 <kbd class="px-2 py-1 bg-obsidian-800 border border-obsidian-700 rounded-lg text-[10px] font-mono text-slate-400">ESC</kbd>
             </div>
             <div id="cmd-results" class="p-2 overflow-y-auto divide-y divide-obsidian-800/60 max-h-[60vh]"></div>
@@ -100,12 +117,12 @@
     <div id="auth-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-obsidian-950/95 backdrop-blur-2xl">
         <div class="glass-card p-8 rounded-3xl w-full max-w-md shadow-2xl border border-emerald-500/20">
             <div class="flex items-center gap-3.5 mb-6">
-                <div class="p-3 bg-gradient-to-tr from-emerald-500 to-cyan-500 rounded-2xl text-black shadow-lg">
-                    <i data-lucide="bot" class="w-6 h-6"></i>
+                <div class="p-3 bg-gradient-to-tr from-emerald-500 via-cyan-500 to-violet-500 rounded-2xl text-black shadow-lg">
+                    <i data-lucide="terminal" class="w-6 h-6"></i>
                 </div>
                 <div>
-                    <h2 id="auth-title" class="text-xl font-extrabold text-white">DSA AI COACH ENGINE</h2>
-                    <p class="text-xs text-slate-400">Adaptive Practice & Study Reminders</p>
+                    <h2 id="auth-title" class="text-xl font-extrabold text-white tracking-wide">DSA MASTERY ENGINE</h2>
+                    <p class="text-xs text-slate-400">Multi-Tier Commercial AI Product</p>
                 </div>
             </div>
 
@@ -123,7 +140,7 @@
                     <input type="password" id="auth-password" required placeholder="••••••••" class="w-full bg-obsidian-900 border border-obsidian-700 rounded-xl px-4 py-2.5 text-sm text-slate-100 outline-none focus:border-emerald-500">
                 </div>
                 <div id="auth-error" class="text-xs text-rose-400 hidden bg-rose-500/10 border border-rose-500/20 p-2.5 rounded-xl"></div>
-                <button type="submit" id="auth-submit-btn" class="w-full bg-gradient-to-r from-emerald-500 to-cyan-500 text-black font-extrabold py-3 rounded-xl text-sm flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/20">
+                <button type="submit" id="auth-submit-btn" class="w-full bg-gradient-to-r from-emerald-500 to-cyan-500 text-black font-extrabold py-3 rounded-xl text-sm flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/20 hover:opacity-95 transition">
                     <span>Sign In</span>
                     <i data-lucide="arrow-right" class="w-4 h-4"></i>
                 </button>
@@ -146,8 +163,8 @@
                 </div>
                 <div>
                     <div class="flex items-center gap-2">
-                        <h1 class="font-black text-lg tracking-wide text-white">DSA MASTERY</h1>
-                        <span class="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">AI COACH ACTIVE</span>
+                        <h1 class="font-black text-lg tracking-wide text-white">DSA ENGINE</h1>
+                        <span class="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">v3.0 PRO</span>
                         
                         <!-- STREAK BADGE -->
                         <div class="hidden sm:flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-gradient-to-r from-amber-500/15 to-orange-500/15 text-amber-300 border border-amber-500/30 text-[11px] font-bold">
@@ -158,18 +175,13 @@
                     </div>
                     <p class="text-xs text-slate-400 flex items-center gap-1.5 mt-0.5">
                         <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-                        Logged in: <span id="user-display" class="text-emerald-300 font-bold">User</span>
+                        User: <span id="user-display" class="text-emerald-300 font-bold">User</span>
                     </p>
                 </div>
             </div>
 
-            <div class="hidden md:flex items-center gap-6 text-xs font-semibold text-slate-400">
-                <a href="#sec-coach" class="hover:text-emerald-400 transition">AI Coach</a>
-                <a href="#sec-metrics" class="hover:text-emerald-400 transition">Metrics</a>
-                <a href="#sec-analytics" class="hover:text-emerald-400 transition">Analytics</a>
-                <a href="#sec-kanban" class="hover:text-emerald-400 transition">Kanban</a>
-                <a href="#sec-table" class="hover:text-emerald-400 transition">Master List</a>
-            </div>
+            <!-- ROADMAP TIER SWITCHER BAR -->
+            <div id="roadmap-tier-selector" class="hidden md:flex items-center gap-1.5 p-1 bg-obsidian-950/90 rounded-2xl border border-obsidian-800"></div>
 
             <div class="flex items-center gap-3">
                 <button onclick="toggleCommandPalette()" class="hidden sm:flex items-center gap-2 px-3 py-1.5 bg-obsidian-900 hover:bg-obsidian-800 text-slate-400 rounded-xl border border-obsidian-800 text-xs transition">
@@ -184,284 +196,312 @@
         </div>
     </header>
 
-    <!-- MAIN SINGLE PAGE DASHBOARD -->
-    <main class="max-w-7xl mx-auto px-6 mt-8 flex-1 w-full space-y-10">
+    <!-- MOBILE ROADMAP SELECTOR -->
+    <div class="md:hidden px-6 mt-4">
+        <div id="roadmap-tier-selector-mobile" class="flex items-center gap-1.5 p-1 bg-obsidian-950/90 rounded-2xl border border-obsidian-800 overflow-x-auto"></div>
+    </div>
 
-        <!-- SECTION 0: AI COACH COMMAND HUB -->
-        <section id="sec-coach" class="glass-card glass-card-glow rounded-3xl p-6 border border-emerald-500/30 bg-gradient-to-r from-emerald-950/20 via-obsidian-900 to-obsidian-900 space-y-6">
-            <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-obsidian-800 pb-4">
-                <div class="flex items-center gap-3">
-                    <div class="p-3 bg-emerald-500/20 text-emerald-400 rounded-2xl border border-emerald-500/30 shadow-[0_0_20px_rgba(16,185,129,0.2)]">
-                        <i data-lucide="bot" class="w-6 h-6"></i>
-                    </div>
-                    <div>
-                        <div class="flex items-center gap-2">
-                            <h2 class="text-lg font-black text-white tracking-wide">AI Performance Coach & Study Briefing</h2>
-                            <span id="coach-track-badge" class="text-[10px] font-mono px-2.5 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 font-bold">Evaluating...</span>
+    <!-- MAIN DASHBOARD CONTENT -->
+    <main class="max-w-7xl mx-auto px-6 mt-6 flex-1 w-full space-y-8">
+
+        <!-- BETA / LOCKED TIER PLACEHOLDER CONTAINER -->
+        <div id="beta-locked-container" class="hidden glass-card p-10 rounded-3xl border border-violet-500/30 text-center relative overflow-hidden my-10 space-y-6">
+            <div class="absolute inset-0 bg-gradient-to-b from-violet-500/10 via-transparent to-transparent opacity-50"></div>
+            <div class="w-20 h-20 mx-auto rounded-3xl bg-violet-500/20 text-violet-400 flex items-center justify-center border border-violet-500/40 shadow-[0_0_30px_rgba(139,92,246,0.3)]">
+                <i data-lucide="lock" class="w-10 h-10"></i>
+            </div>
+            <div class="max-w-md mx-auto space-y-2 relative z-10">
+                <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-violet-500/20 text-violet-300 border border-violet-500/40 text-xs font-mono font-bold uppercase tracking-wider mb-2">
+                    <i data-lucide="sparkles" class="w-3.5 h-3.5"></i> Beta / Coming Soon
+                </div>
+                <h3 id="locked-tier-title" class="text-2xl font-black text-white">Tier Curriculum Locked</h3>
+                <p id="locked-tier-desc" class="text-xs text-slate-400 leading-relaxed">Drop your workbook file into the project directory to auto-unlock this roadmap tier.</p>
+            </div>
+            <div class="inline-block bg-obsidian-950 p-4 rounded-2xl border border-obsidian-800 text-left font-mono text-xs text-slate-300 space-y-1">
+                <p class="text-slate-500 text-[10px] uppercase font-bold">Auto-Ingest Instructions:</p>
+                <p>1. Name file: <span id="locked-filename" class="text-emerald-400 font-bold">Roadmap_Intermediate.xlsx</span></p>
+                <p>2. Run: <span class="text-cyan-400">npm run seed</span></p>
+            </div>
+        </div>
+
+        <!-- UNLOCKED MAIN DASHBOARD VIEW -->
+        <div id="unlocked-dashboard-view" class="space-y-8">
+
+            <!-- SECTION 0: AI COACH COMMAND HUB -->
+            <section id="sec-coach" class="glass-card glass-card-glow rounded-3xl p-6 border border-emerald-500/30 bg-gradient-to-r from-emerald-950/20 via-obsidian-900 to-obsidian-900 space-y-6">
+                <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-obsidian-800 pb-4">
+                    <div class="flex items-center gap-3">
+                        <div class="p-3 bg-emerald-500/20 text-emerald-400 rounded-2xl border border-emerald-500/30 shadow-[0_0_20px_rgba(16,185,129,0.2)]">
+                            <i data-lucide="bot" class="w-6 h-6"></i>
                         </div>
-                        <p class="text-xs text-slate-400 mt-0.5">Automated difficulty adaptation & spaced-repetition scheduler</p>
+                        <div>
+                            <div class="flex items-center gap-2">
+                                <h2 class="text-lg font-black text-white tracking-wide">AI Performance Mentor</h2>
+                                <span id="coach-track-badge" class="text-[10px] font-mono px-2.5 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 font-bold">Evaluating...</span>
+                            </div>
+                            <p class="text-xs text-slate-400 mt-0.5">Automated difficulty adaptation & spaced-repetition scheduler</p>
+                        </div>
+                    </div>
+
+                    <div class="flex items-center gap-3">
+                        <button onclick="triggerCoachEmail()" class="px-4 py-2 text-xs font-bold bg-gradient-to-r from-emerald-500 to-cyan-500 text-black rounded-xl shadow-lg shadow-emerald-500/20 hover:opacity-95 transition flex items-center gap-2">
+                            <i data-lucide="mail" class="w-4 h-4"></i> Send Strategy Plan
+                        </button>
                     </div>
                 </div>
 
-                <div class="flex items-center gap-3">
-                    <button onclick="triggerCoachEmail()" class="px-4 py-2 text-xs font-bold bg-gradient-to-r from-emerald-500 to-cyan-500 text-black rounded-xl shadow-lg shadow-emerald-500/20 hover:opacity-95 transition flex items-center gap-2">
-                        <i data-lucide="mail" class="w-4 h-4"></i> Send Email Study Plan
+                <!-- AI Insight & Action Grid -->
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <div class="glass-card p-5 rounded-2xl bg-obsidian-950/80 border border-obsidian-800 space-y-3 lg:col-span-2">
+                        <p class="text-[10px] font-bold uppercase tracking-wider text-emerald-400 flex items-center gap-1.5">
+                            <i data-lucide="zap" class="w-3.5 h-3.5"></i> Active Strategy Directive
+                        </p>
+                        <p id="coach-directive" class="text-xs text-slate-200 leading-relaxed font-medium">Analyzing tier progress history...</p>
+                        <p id="coach-reason" class="text-[11px] text-slate-400 italic bg-obsidian-900 p-2.5 rounded-xl border border-obsidian-800"></p>
+                    </div>
+
+                    <div class="glass-card p-5 rounded-2xl bg-obsidian-950/80 border border-obsidian-800 flex flex-col justify-between space-y-3">
+                        <p class="text-[10px] font-bold uppercase tracking-wider text-cyan-400 flex items-center gap-1.5">
+                            <i data-lucide="message-square" class="w-3.5 h-3.5"></i> Ask Mentor
+                        </p>
+                        <div class="flex gap-2">
+                            <input type="text" id="ai-question" placeholder="e.g. Approach for 2-pointer edge cases?" class="bg-obsidian-900 border border-obsidian-800 text-xs text-slate-200 rounded-xl px-3 py-2 outline-none w-full focus:border-cyan-500">
+                            <button onclick="askAiCoach()" class="px-3 py-2 bg-cyan-500 text-black font-bold text-xs rounded-xl hover:bg-cyan-400 shrink-0 transition">Ask</button>
+                        </div>
+                        <p id="ai-answer" class="text-[11px] text-slate-300 hidden bg-obsidian-900 p-2.5 rounded-xl border border-obsidian-800 max-h-24 overflow-y-auto"></p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- SECTION 1: TOP METRICS OVERVIEW -->
+            <section id="sec-metrics" class="space-y-4">
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+                    <div class="glass-card p-6 rounded-3xl relative overflow-hidden glass-card-hover">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <p class="text-xs font-bold uppercase tracking-wider text-slate-400">Tier Problems</p>
+                                <span id="stat-total" class="text-4xl font-black text-white font-mono mt-3 block">0</span>
+                            </div>
+                            <div class="p-3 bg-slate-800 text-slate-300 rounded-2xl border border-slate-700/50">
+                                <i data-lucide="layers" class="w-6 h-6"></i>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="glass-card p-6 rounded-3xl relative overflow-hidden glass-card-hover">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <p class="text-xs font-bold uppercase tracking-wider text-emerald-400">Completed</p>
+                                <span id="stat-solved" class="text-4xl font-black text-emerald-400 font-mono mt-3 block">0</span>
+                            </div>
+                            <div class="p-3 bg-emerald-500/10 text-emerald-400 rounded-2xl border border-emerald-500/20">
+                                <i data-lucide="check-circle-2" class="w-6 h-6"></i>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-2 mt-4">
+                            <div class="flex-1 bg-obsidian-900 h-2 rounded-full overflow-hidden border border-obsidian-800">
+                                <div id="stat-solved-bar" class="bg-gradient-to-r from-emerald-500 to-cyan-400 h-full rounded-full transition-all duration-700" style="width: 0%"></div>
+                            </div>
+                            <span id="stat-rate" class="text-xs font-bold text-emerald-400 font-mono">0%</span>
+                        </div>
+                    </div>
+
+                    <div class="glass-card p-6 rounded-3xl relative overflow-hidden glass-card-hover">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <p class="text-xs font-bold uppercase tracking-wider text-indigo-400">Mastered</p>
+                                <span id="stat-mastered" class="text-4xl font-black text-indigo-400 font-mono mt-3 block">0</span>
+                            </div>
+                            <div class="p-3 bg-indigo-500/10 text-indigo-400 rounded-2xl border border-indigo-500/20">
+                                <i data-lucide="award" class="w-6 h-6"></i>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="glass-card p-6 rounded-3xl relative overflow-hidden glass-card-hover">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <p class="text-xs font-bold uppercase tracking-wider text-amber-400">Due Revisions</p>
+                                <span id="stat-due" class="text-4xl font-black text-amber-400 font-mono mt-3 block">0</span>
+                            </div>
+                            <div class="p-3 bg-amber-500/10 text-amber-400 rounded-2xl border border-amber-500/20">
+                                <i data-lucide="clock" class="w-6 h-6"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- SECTION 2: CHARTS & ANALYTICS -->
+            <section id="sec-analytics" class="glass-card rounded-3xl p-6 space-y-6">
+                <div class="flex items-center justify-between cursor-pointer border-b border-obsidian-800 pb-4" onclick="toggleSection('body-analytics', 'icon-analytics')">
+                    <div class="flex items-center gap-3">
+                        <div class="p-2 bg-emerald-500/10 text-emerald-400 rounded-xl">
+                            <i data-lucide="pie-chart" class="w-5 h-5"></i>
+                        </div>
+                        <div>
+                            <h2 class="text-base font-extrabold text-white tracking-wide">Completion & Topic Analytics</h2>
+                            <p class="text-xs text-slate-400">Interactive Chart.js visualizations</p>
+                        </div>
+                    </div>
+                    <button class="p-2 text-slate-400 hover:text-white rounded-xl bg-obsidian-900 border border-obsidian-800">
+                        <i data-lucide="chevron-down" id="icon-analytics" class="w-4 h-4 transition-transform"></i>
                     </button>
                 </div>
-            </div>
 
-            <!-- AI Insight & Action Grid -->
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <!-- AI Coach Directive -->
-                <div class="glass-card p-5 rounded-2xl bg-obsidian-950/80 border border-obsidian-800 space-y-3 lg:col-span-2">
-                    <p class="text-[10px] font-bold uppercase tracking-wider text-emerald-400 flex items-center gap-1.5">
-                        <i data-lucide="zap" class="w-3.5 h-3.5"></i> Daily AI Strategy Directive
-                    </p>
-                    <p id="coach-directive" class="text-xs text-slate-200 leading-relaxed font-medium">Analyzing your progress history...</p>
-                    <p id="coach-reason" class="text-[11px] text-slate-400 italic bg-obsidian-900 p-2.5 rounded-xl border border-obsidian-800"></p>
-                </div>
-
-                <!-- Interactive Ask AI Drawer -->
-                <div class="glass-card p-5 rounded-2xl bg-obsidian-950/80 border border-obsidian-800 flex flex-col justify-between space-y-3">
-                    <p class="text-[10px] font-bold uppercase tracking-wider text-cyan-400 flex items-center gap-1.5">
-                        <i data-lucide="message-square" class="w-3.5 h-3.5"></i> Ask Your AI Coach
-                    </p>
-                    <div class="flex gap-2">
-                        <input type="text" id="ai-question" placeholder="e.g. How to master sliding window?" class="bg-obsidian-900 border border-obsidian-800 text-xs text-slate-200 rounded-xl px-3 py-2 outline-none w-full focus:border-cyan-500">
-                        <button onclick="askAiCoach()" class="px-3 py-2 bg-cyan-500 text-black font-bold text-xs rounded-xl hover:bg-cyan-400 shrink-0 transition">Ask</button>
+                <div id="body-analytics" class="grid grid-cols-1 lg:grid-cols-3 gap-6 pt-2">
+                    <div class="glass-card p-6 rounded-2xl flex flex-col items-center justify-center relative">
+                        <h3 class="text-xs font-bold text-slate-300 tracking-wider uppercase mb-4 w-full text-left">Status Ratio</h3>
+                        <div class="relative w-56 h-56 flex items-center justify-center">
+                            <canvas id="doughnutChart"></canvas>
+                        </div>
                     </div>
-                    <p id="ai-answer" class="text-[11px] text-slate-300 hidden bg-obsidian-900 p-2.5 rounded-xl border border-obsidian-800 max-h-24 overflow-y-auto"></p>
-                </div>
-            </div>
-        </section>
 
-        <!-- SECTION 1: TOP METRICS OVERVIEW -->
-        <section id="sec-metrics" class="space-y-4">
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-                <div class="glass-card p-6 rounded-3xl relative overflow-hidden glass-card-hover">
-                    <div class="flex justify-between items-start">
+                    <div class="glass-card p-6 rounded-2xl lg:col-span-2 flex flex-col justify-between">
+                        <h3 class="text-xs font-bold text-slate-300 tracking-wider uppercase mb-4">Topic Progress Distribution</h3>
+                        <div class="w-full h-64">
+                            <canvas id="topicBarChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- SECTION 3: KANBAN BOARD -->
+            <section id="sec-kanban" class="glass-card rounded-3xl p-6 space-y-6">
+                <div class="flex items-center justify-between cursor-pointer border-b border-obsidian-800 pb-4" onclick="toggleSection('body-kanban', 'icon-kanban')">
+                    <div class="flex items-center gap-3">
+                        <div class="p-2 bg-cyan-500/10 text-cyan-400 rounded-xl">
+                            <i data-lucide="kanban" class="w-5 h-5"></i>
+                        </div>
                         <div>
-                            <p class="text-xs font-bold uppercase tracking-wider text-slate-400">Total Curriculum</p>
-                            <span id="stat-total" class="text-4xl font-black text-white font-mono mt-3 block">0</span>
-                        </div>
-                        <div class="p-3 bg-slate-800 text-slate-300 rounded-2xl border border-slate-700/50">
-                            <i data-lucide="layers" class="w-6 h-6"></i>
+                            <h2 class="text-base font-extrabold text-white tracking-wide">Interactive Drag & Drop Board</h2>
+                            <p class="text-xs text-slate-400">Drag cards between columns to update status & trigger celebrations</p>
                         </div>
                     </div>
+                    <button class="p-2 text-slate-400 hover:text-white rounded-xl bg-obsidian-900 border border-obsidian-800">
+                        <i data-lucide="chevron-down" id="icon-kanban" class="w-4 h-4 transition-transform"></i>
+                    </button>
                 </div>
 
-                <div class="glass-card p-6 rounded-3xl relative overflow-hidden glass-card-hover">
-                    <div class="flex justify-between items-start">
+                <div id="body-kanban" class="grid grid-cols-1 md:grid-cols-4 gap-5 pt-2">
+                    <div class="kanban-column rounded-2xl p-4 flex flex-col space-y-3" ondragover="allowDrop(event)" ondrop="handleDrop(event, 'Todo')">
+                        <div class="flex justify-between items-center pb-2 border-b border-obsidian-800">
+                            <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Todo</span>
+                            <span id="kanban-count-todo" class="text-xs font-mono font-bold px-2 py-0.5 rounded-full bg-obsidian-900 text-slate-400">0</span>
+                        </div>
+                        <div id="kanban-list-todo" class="space-y-3 flex-1 overflow-y-auto max-h-[600px] pr-1"></div>
+                    </div>
+
+                    <div class="kanban-column rounded-2xl p-4 flex flex-col space-y-3" ondragover="allowDrop(event)" ondrop="handleDrop(event, 'Hint-solved')">
+                        <div class="flex justify-between items-center pb-2 border-b border-obsidian-800">
+                            <span class="text-xs font-bold uppercase tracking-wider text-amber-400">Hint-Solved</span>
+                            <span id="kanban-count-hint" class="text-xs font-mono font-bold px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300">0</span>
+                        </div>
+                        <div id="kanban-list-hint" class="space-y-3 flex-1 overflow-y-auto max-h-[600px] pr-1"></div>
+                    </div>
+
+                    <div class="kanban-column rounded-2xl p-4 flex flex-col space-y-3" ondragover="allowDrop(event)" ondrop="handleDrop(event, 'Solved')">
+                        <div class="flex justify-between items-center pb-2 border-b border-obsidian-800">
+                            <span class="text-xs font-bold uppercase tracking-wider text-emerald-400">Solved</span>
+                            <span id="kanban-count-solved" class="text-xs font-mono font-bold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300">0</span>
+                        </div>
+                        <div id="kanban-list-solved" class="space-y-3 flex-1 overflow-y-auto max-h-[600px] pr-1"></div>
+                    </div>
+
+                    <div class="kanban-column rounded-2xl p-4 flex flex-col space-y-3" ondragover="allowDrop(event)" ondrop="handleDrop(event, 'Mastered')">
+                        <div class="flex justify-between items-center pb-2 border-b border-obsidian-800">
+                            <span class="text-xs font-bold uppercase tracking-wider text-indigo-400">Mastered</span>
+                            <span id="kanban-count-mastered" class="text-xs font-mono font-bold px-2 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300">0</span>
+                        </div>
+                        <div id="kanban-list-mastered" class="space-y-3 flex-1 overflow-y-auto max-h-[600px] pr-1"></div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- SECTION 4: MASTER PROBLEM LIST -->
+            <section id="sec-table" class="glass-card rounded-3xl p-6 space-y-6">
+                <div class="flex items-center justify-between cursor-pointer border-b border-obsidian-800 pb-4" onclick="toggleSection('body-table', 'icon-table')">
+                    <div class="flex items-center gap-3">
+                        <div class="p-2 bg-indigo-500/10 text-indigo-400 rounded-xl">
+                            <i data-lucide="list-checks" class="w-5 h-5"></i>
+                        </div>
                         <div>
-                            <p class="text-xs font-bold uppercase tracking-wider text-emerald-400">Completed</p>
-                            <span id="stat-solved" class="text-4xl font-black text-emerald-400 font-mono mt-3 block">0</span>
-                        </div>
-                        <div class="p-3 bg-emerald-500/10 text-emerald-400 rounded-2xl border border-emerald-500/20">
-                            <i data-lucide="check-circle-2" class="w-6 h-6"></i>
+                            <h2 class="text-base font-extrabold text-white tracking-wide">Master Problem List</h2>
+                            <p class="text-xs text-slate-400">Click problem to open LeetCode, or click row to expand stopwatch & key logic notes</p>
                         </div>
                     </div>
-                    <div class="flex items-center gap-2 mt-4">
-                        <div class="flex-1 bg-obsidian-900 h-2 rounded-full overflow-hidden border border-obsidian-800">
-                            <div id="stat-solved-bar" class="bg-gradient-to-r from-emerald-500 to-cyan-400 h-full rounded-full transition-all duration-700" style="width: 0%"></div>
+                    <button class="p-2 text-slate-400 hover:text-white rounded-xl bg-obsidian-900 border border-obsidian-800">
+                        <i data-lucide="chevron-down" id="icon-table" class="w-4 h-4 transition-transform"></i>
+                    </button>
+                </div>
+
+                <div id="body-table" class="space-y-4 pt-2">
+                    <div class="space-y-3 bg-obsidian-900/80 p-4 rounded-2xl border border-obsidian-800">
+                        <div class="flex flex-wrap gap-4 items-center justify-between">
+                            <div class="flex items-center gap-3 bg-obsidian-950 border border-obsidian-800 rounded-xl px-4 py-2 flex-1 min-w-[260px] focus-within:border-emerald-500/50 transition">
+                                <i data-lucide="search" class="w-4 h-4 text-slate-500"></i>
+                                <input type="text" id="search-input" oninput="renderTable()" placeholder="Search problem, topic, or logic notes..." class="bg-transparent text-xs text-slate-100 outline-none w-full">
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <span class="text-[11px] font-bold text-slate-400 uppercase">Topic:</span>
+                                <select id="filter-topic" onchange="renderTable()" class="bg-obsidian-950 border border-obsidian-800 text-xs rounded-xl px-3 py-2 text-slate-300 outline-none focus:border-emerald-500/50"></select>
+                            </div>
                         </div>
-                        <span id="stat-rate" class="text-xs font-bold text-emerald-400 font-mono">0%</span>
-                    </div>
-                </div>
 
-                <div class="glass-card p-6 rounded-3xl relative overflow-hidden glass-card-hover">
-                    <div class="flex justify-between items-start">
-                        <div>
-                            <p class="text-xs font-bold uppercase tracking-wider text-indigo-400">Mastered</p>
-                            <span id="stat-mastered" class="text-4xl font-black text-indigo-400 font-mono mt-3 block">0</span>
-                        </div>
-                        <div class="p-3 bg-indigo-500/10 text-indigo-400 rounded-2xl border border-indigo-500/20">
-                            <i data-lucide="award" class="w-6 h-6"></i>
-                        </div>
-                    </div>
-                </div>
+                        <!-- Filter Chips -->
+                        <div class="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-obsidian-800/60">
+                            <div class="flex items-center gap-1.5 overflow-x-auto">
+                                <span class="text-[11px] font-bold text-slate-400 uppercase mr-1">Difficulty:</span>
+                                <button onclick="setFilterChip('diff', 'ALL')" id="chip-diff-ALL" class="px-3 py-1 rounded-xl text-xs font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 transition">All</button>
+                                <button onclick="setFilterChip('diff', 'Easy')" id="chip-diff-Easy" class="px-3 py-1 rounded-xl text-xs font-bold bg-obsidian-950 text-slate-400 border border-obsidian-800 hover:text-white transition">Easy</button>
+                                <button onclick="setFilterChip('diff', 'Medium')" id="chip-diff-Medium" class="px-3 py-1 rounded-xl text-xs font-bold bg-obsidian-950 text-slate-400 border border-obsidian-800 hover:text-white transition">Medium</button>
+                                <button onclick="setFilterChip('diff', 'Hard')" id="chip-diff-Hard" class="px-3 py-1 rounded-xl text-xs font-bold bg-obsidian-950 text-slate-400 border border-obsidian-800 hover:text-white transition">Hard</button>
+                            </div>
 
-                <div class="glass-card p-6 rounded-3xl relative overflow-hidden glass-card-hover">
-                    <div class="flex justify-between items-start">
-                        <div>
-                            <p class="text-xs font-bold uppercase tracking-wider text-amber-400">Due Revisions</p>
-                            <span id="stat-due" class="text-4xl font-black text-amber-400 font-mono mt-3 block">0</span>
-                        </div>
-                        <div class="p-3 bg-amber-500/10 text-amber-400 rounded-2xl border border-amber-500/20">
-                            <i data-lucide="clock" class="w-6 h-6"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <!-- SECTION 2: CHARTS & ANALYTICS -->
-        <section id="sec-analytics" class="glass-card rounded-3xl p-6 space-y-6">
-            <div class="flex items-center justify-between cursor-pointer border-b border-obsidian-800 pb-4" onclick="toggleSection('body-analytics', 'icon-analytics')">
-                <div class="flex items-center gap-3">
-                    <div class="p-2 bg-emerald-500/10 text-emerald-400 rounded-xl">
-                        <i data-lucide="pie-chart" class="w-5 h-5"></i>
-                    </div>
-                    <div>
-                        <h2 class="text-base font-extrabold text-white tracking-wide">Completion & Topic Analytics</h2>
-                        <p class="text-xs text-slate-400">Interactive Chart.js visualizations</p>
-                    </div>
-                </div>
-                <button class="p-2 text-slate-400 hover:text-white rounded-xl bg-obsidian-900 border border-obsidian-800">
-                    <i data-lucide="chevron-down" id="icon-analytics" class="w-4 h-4 transition-transform"></i>
-                </button>
-            </div>
-
-            <div id="body-analytics" class="grid grid-cols-1 lg:grid-cols-3 gap-6 pt-2">
-                <div class="glass-card p-6 rounded-2xl flex flex-col items-center justify-center relative">
-                    <h3 class="text-xs font-bold text-slate-300 tracking-wider uppercase mb-4 w-full text-left">Status Ratio</h3>
-                    <div class="relative w-56 h-56 flex items-center justify-center">
-                        <canvas id="doughnutChart"></canvas>
-                    </div>
-                </div>
-
-                <div class="glass-card p-6 rounded-2xl lg:col-span-2 flex flex-col justify-between">
-                    <h3 class="text-xs font-bold text-slate-300 tracking-wider uppercase mb-4">Topic Progress Distribution</h3>
-                    <div class="w-full h-64">
-                        <canvas id="topicBarChart"></canvas>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <!-- SECTION 3: KANBAN BOARD -->
-        <section id="sec-kanban" class="glass-card rounded-3xl p-6 space-y-6">
-            <div class="flex items-center justify-between cursor-pointer border-b border-obsidian-800 pb-4" onclick="toggleSection('body-kanban', 'icon-kanban')">
-                <div class="flex items-center gap-3">
-                    <div class="p-2 bg-cyan-500/10 text-cyan-400 rounded-xl">
-                        <i data-lucide="kanban" class="w-5 h-5"></i>
-                    </div>
-                    <div>
-                        <h2 class="text-base font-extrabold text-white tracking-wide">Interactive Drag & Drop Board</h2>
-                        <p class="text-xs text-slate-400">Drag cards between columns to update status & trigger celebrations</p>
-                    </div>
-                </div>
-                <button class="p-2 text-slate-400 hover:text-white rounded-xl bg-obsidian-900 border border-obsidian-800">
-                    <i data-lucide="chevron-down" id="icon-kanban" class="w-4 h-4 transition-transform"></i>
-                </button>
-            </div>
-
-            <div id="body-kanban" class="grid grid-cols-1 md:grid-cols-4 gap-5 pt-2">
-                <div class="kanban-column rounded-2xl p-4 flex flex-col space-y-3" ondragover="allowDrop(event)" ondrop="handleDrop(event, 'Todo')">
-                    <div class="flex justify-between items-center pb-2 border-b border-obsidian-800">
-                        <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Todo</span>
-                        <span id="kanban-count-todo" class="text-xs font-mono font-bold px-2 py-0.5 rounded-full bg-obsidian-900 text-slate-400">0</span>
-                    </div>
-                    <div id="kanban-list-todo" class="space-y-3 flex-1 overflow-y-auto max-h-[600px] pr-1"></div>
-                </div>
-
-                <div class="kanban-column rounded-2xl p-4 flex flex-col space-y-3" ondragover="allowDrop(event)" ondrop="handleDrop(event, 'Hint-solved')">
-                    <div class="flex justify-between items-center pb-2 border-b border-obsidian-800">
-                        <span class="text-xs font-bold uppercase tracking-wider text-amber-400">Hint-Solved</span>
-                        <span id="kanban-count-hint" class="text-xs font-mono font-bold px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300">0</span>
-                    </div>
-                    <div id="kanban-list-hint" class="space-y-3 flex-1 overflow-y-auto max-h-[600px] pr-1"></div>
-                </div>
-
-                <div class="kanban-column rounded-2xl p-4 flex flex-col space-y-3" ondragover="allowDrop(event)" ondrop="handleDrop(event, 'Solved')">
-                    <div class="flex justify-between items-center pb-2 border-b border-obsidian-800">
-                        <span class="text-xs font-bold uppercase tracking-wider text-emerald-400">Solved</span>
-                        <span id="kanban-count-solved" class="text-xs font-mono font-bold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300">0</span>
-                    </div>
-                    <div id="kanban-list-solved" class="space-y-3 flex-1 overflow-y-auto max-h-[600px] pr-1"></div>
-                </div>
-
-                <div class="kanban-column rounded-2xl p-4 flex flex-col space-y-3" ondragover="allowDrop(event)" ondrop="handleDrop(event, 'Mastered')">
-                    <div class="flex justify-between items-center pb-2 border-b border-obsidian-800">
-                        <span class="text-xs font-bold uppercase tracking-wider text-indigo-400">Mastered</span>
-                        <span id="kanban-count-mastered" class="text-xs font-mono font-bold px-2 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300">0</span>
-                    </div>
-                    <div id="kanban-list-mastered" class="space-y-3 flex-1 overflow-y-auto max-h-[600px] pr-1"></div>
-                </div>
-            </div>
-        </section>
-
-        <!-- SECTION 4: MASTER PROBLEM LIST -->
-        <section id="sec-table" class="glass-card rounded-3xl p-6 space-y-6">
-            <div class="flex items-center justify-between cursor-pointer border-b border-obsidian-800 pb-4" onclick="toggleSection('body-table', 'icon-table')">
-                <div class="flex items-center gap-3">
-                    <div class="p-2 bg-indigo-500/10 text-indigo-400 rounded-xl">
-                        <i data-lucide="list-checks" class="w-5 h-5"></i>
-                    </div>
-                    <div>
-                        <h2 class="text-base font-extrabold text-white tracking-wide">Master Problem List</h2>
-                        <p class="text-xs text-slate-400">Click problem to open LeetCode, or click row to expand stopwatch & key logic notes</p>
-                    </div>
-                </div>
-                <button class="p-2 text-slate-400 hover:text-white rounded-xl bg-obsidian-900 border border-obsidian-800">
-                    <i data-lucide="chevron-down" id="icon-table" class="w-4 h-4 transition-transform"></i>
-                </button>
-            </div>
-
-            <div id="body-table" class="space-y-4 pt-2">
-                <!-- SLEEK FILTER PILLS AND SEARCH -->
-                <div class="space-y-3 bg-obsidian-900/80 p-4 rounded-2xl border border-obsidian-800">
-                    <div class="flex flex-wrap gap-4 items-center justify-between">
-                        <div class="flex items-center gap-3 bg-obsidian-950 border border-obsidian-800 rounded-xl px-4 py-2 flex-1 min-w-[260px] focus-within:border-emerald-500/50 transition">
-                            <i data-lucide="search" class="w-4 h-4 text-slate-500"></i>
-                            <input type="text" id="search-input" oninput="renderTable()" placeholder="Search problem, topic, or logic notes..." class="bg-transparent text-xs text-slate-100 outline-none w-full">
-                        </div>
-                        <div class="flex items-center gap-2">
-                            <span class="text-[11px] font-bold text-slate-400 uppercase">Topic:</span>
-                            <select id="filter-topic" onchange="renderTable()" class="bg-obsidian-950 border border-obsidian-800 text-xs rounded-xl px-3 py-2 text-slate-300 outline-none focus:border-emerald-500/50"></select>
+                            <div class="flex items-center gap-1.5 overflow-x-auto">
+                                <span class="text-[11px] font-bold text-slate-400 uppercase mr-1">Status:</span>
+                                <button onclick="setFilterChip('status', 'ALL')" id="chip-status-ALL" class="px-3 py-1 rounded-xl text-xs font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 transition">All</button>
+                                <button onclick="setFilterChip('status', 'Todo')" id="chip-status-Todo" class="px-3 py-1 rounded-xl text-xs font-bold bg-obsidian-950 text-slate-400 border border-obsidian-800 hover:text-white transition">Todo</button>
+                                <button onclick="setFilterChip('status', 'Hint-solved')" id="chip-status-Hint-solved" class="px-3 py-1 rounded-xl text-xs font-bold bg-obsidian-950 text-slate-400 border border-obsidian-800 hover:text-white transition">Hint-Solved</button>
+                                <button onclick="setFilterChip('status', 'Solved')" id="chip-status-Solved" class="px-3 py-1 rounded-xl text-xs font-bold bg-obsidian-950 text-slate-400 border border-obsidian-800 hover:text-white transition">Solved</button>
+                                <button onclick="setFilterChip('status', 'Mastered')" id="chip-status-Mastered" class="px-3 py-1 rounded-xl text-xs font-bold bg-obsidian-950 text-slate-400 border border-obsidian-800 hover:text-white transition">Mastered</button>
+                            </div>
                         </div>
                     </div>
 
-                    <!-- Difficulty Filter Chips -->
-                    <div class="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-obsidian-800/60">
-                        <div class="flex items-center gap-1.5 overflow-x-auto">
-                            <span class="text-[11px] font-bold text-slate-400 uppercase mr-1">Difficulty:</span>
-                            <button onclick="setFilterChip('diff', 'ALL')" id="chip-diff-ALL" class="px-3 py-1 rounded-xl text-xs font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 transition">All</button>
-                            <button onclick="setFilterChip('diff', 'Easy')" id="chip-diff-Easy" class="px-3 py-1 rounded-xl text-xs font-bold bg-obsidian-950 text-slate-400 border border-obsidian-800 hover:text-white transition">Easy</button>
-                            <button onclick="setFilterChip('diff', 'Medium')" id="chip-diff-Medium" class="px-3 py-1 rounded-xl text-xs font-bold bg-obsidian-950 text-slate-400 border border-obsidian-800 hover:text-white transition">Medium</button>
-                            <button onclick="setFilterChip('diff', 'Hard')" id="chip-diff-Hard" class="px-3 py-1 rounded-xl text-xs font-bold bg-obsidian-950 text-slate-400 border border-obsidian-800 hover:text-white transition">Hard</button>
-                        </div>
-
-                        <!-- Status Filter Chips -->
-                        <div class="flex items-center gap-1.5 overflow-x-auto">
-                            <span class="text-[11px] font-bold text-slate-400 uppercase mr-1">Status:</span>
-                            <button onclick="setFilterChip('status', 'ALL')" id="chip-status-ALL" class="px-3 py-1 rounded-xl text-xs font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 transition">All</button>
-                            <button onclick="setFilterChip('status', 'Todo')" id="chip-status-Todo" class="px-3 py-1 rounded-xl text-xs font-bold bg-obsidian-950 text-slate-400 border border-obsidian-800 hover:text-white transition">Todo</button>
-                            <button onclick="setFilterChip('status', 'Hint-solved')" id="chip-status-Hint-solved" class="px-3 py-1 rounded-xl text-xs font-bold bg-obsidian-950 text-slate-400 border border-obsidian-800 hover:text-white transition">Hint-Solved</button>
-                            <button onclick="setFilterChip('status', 'Solved')" id="chip-status-Solved" class="px-3 py-1 rounded-xl text-xs font-bold bg-obsidian-950 text-slate-400 border border-obsidian-800 hover:text-white transition">Solved</button>
-                            <button onclick="setFilterChip('status', 'Mastered')" id="chip-status-Mastered" class="px-3 py-1 rounded-xl text-xs font-bold bg-obsidian-950 text-slate-400 border border-obsidian-800 hover:text-white transition">Mastered</button>
+                    <div class="rounded-2xl overflow-hidden border border-obsidian-800">
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left text-xs">
+                                <thead class="bg-obsidian-900 text-slate-400 uppercase font-bold border-b border-obsidian-800">
+                                    <tr>
+                                        <th class="p-4 w-10 text-center font-mono">#</th>
+                                        <th class="p-4">Problem Name</th>
+                                        <th class="p-4">Topic</th>
+                                        <th class="p-4">Difficulty</th>
+                                        <th class="p-4">Priority</th>
+                                        <th class="p-4">Status</th>
+                                        <th class="p-4 text-center">Time (m)</th>
+                                        <th class="p-4 text-center">Revisions</th>
+                                        <th class="p-4">Next Due</th>
+                                        <th class="p-4 text-center">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="table-body" class="divide-y divide-obsidian-800/80 font-medium"></tbody>
+                            </table>
                         </div>
                     </div>
                 </div>
+            </section>
 
-                <div class="rounded-2xl overflow-hidden border border-obsidian-800">
-                    <div class="overflow-x-auto">
-                        <table class="w-full text-left text-xs">
-                            <thead class="bg-obsidian-900 text-slate-400 uppercase font-bold border-b border-obsidian-800">
-                                <tr>
-                                    <th class="p-4 w-10 text-center font-mono">#</th>
-                                    <th class="p-4">Problem Name</th>
-                                    <th class="p-4">Topic</th>
-                                    <th class="p-4">Difficulty</th>
-                                    <th class="p-4">Priority</th>
-                                    <th class="p-4">Status</th>
-                                    <th class="p-4 text-center">Time (m)</th>
-                                    <th class="p-4 text-center">Revisions</th>
-                                    <th class="p-4">Next Due</th>
-                                    <th class="p-4 text-center">Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody id="table-body" class="divide-y divide-obsidian-800/80 font-medium"></tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-        </section>
+        </div>
 
     </main>
 
     <script>
         let isSignup = false;
         let jwtToken = localStorage.getItem('dsa_jwt');
+        let currentTier = 'Beginner';
+        let roadmapsMeta = [];
         let problemsData = [];
         let doughnutChartInstance = null;
         let topicChartInstance = null;
@@ -472,13 +512,59 @@
         let selectedDiffChip = 'ALL';
         let selectedStatusChip = 'ALL';
 
-        if (jwtToken) {
-            document.getElementById('auth-modal').classList.add('hidden');
-            const cachedUser = localStorage.getItem('dsa_user');
-            if (cachedUser) document.getElementById('user-display').innerText = cachedUser;
+        // BACKGROUND CANVASES / SCANLINES
+        function initCyberCanvas() {
+            const canvas = document.getElementById('cyber-canvas');
+            const ctx = canvas.getContext('2d');
+            let width = canvas.width = window.innerWidth;
+            let height = canvas.height = window.innerHeight;
+
+            window.addEventListener('resize', () => {
+                width = canvas.width = window.innerWidth;
+                height = canvas.height = window.innerHeight;
+            });
+
+            const particles = Array.from({ length: 45 }, () => ({
+                x: Math.random() * width,
+                y: Math.random() * height,
+                vx: (Math.random() - 0.5) * 0.4,
+                vy: (Math.random() - 0.5) * 0.4,
+                radius: Math.random() * 1.5 + 1
+            }));
+
+            function animate() {
+                ctx.clearRect(0, 0, width, height);
+                ctx.fillStyle = 'rgba(16, 185, 129, 0.18)';
+                ctx.strokeStyle = 'rgba(16, 185, 129, 0.05)';
+
+                for (let i = 0; i < particles.length; i++) {
+                    let p = particles[i];
+                    p.x += p.vx;
+                    p.y += p.vy;
+
+                    if (p.x < 0 || p.x > width) p.vx *= -1;
+                    if (p.y < 0 || p.y > height) p.vy *= -1;
+
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+                    ctx.fill();
+
+                    for (let j = i + 1; j < particles.length; j++) {
+                        let p2 = particles[j];
+                        let dist = Math.hypot(p.x - p2.x, p.y - p2.y);
+                        if (dist < 130) {
+                            ctx.beginPath();
+                            ctx.moveTo(p.x, p.y);
+                            ctx.lineTo(p2.x, p2.y);
+                            ctx.stroke();
+                        }
+                    }
+                }
+                requestAnimationFrame(animate);
+            }
+            animate();
         }
 
-        // FLOATING GLASS TOAST SYSTEM
         function showToast(message, type = 'success') {
             const container = document.getElementById('toast-container');
             const toast = document.createElement('div');
@@ -508,7 +594,7 @@
 
         function toggleAuthMode() {
             isSignup = !isSignup;
-            document.getElementById('auth-title').innerText = isSignup ? 'Create Account' : 'DSA AI COACH ENGINE';
+            document.getElementById('auth-title').innerText = isSignup ? 'Create Account' : 'DSA MASTERY ENGINE';
             document.getElementById('name-field').classList.toggle('hidden', !isSignup);
         }
 
@@ -547,12 +633,72 @@
                     localStorage.setItem('dsa_user', data.user.name);
                 }
                 document.getElementById('auth-modal').classList.add('hidden');
-                loadAllData();
+                loadRoadmapsMeta();
             });
         }
 
-        function loadAllData() {
-            apiFetch('/api/problems').then(data => {
+        function loadRoadmapsMeta() {
+            apiFetch('/api/roadmaps/meta').then(meta => {
+                roadmapsMeta = meta;
+                renderRoadmapTierSelectors();
+                
+                const currentMeta = meta.find(m => m.tier === currentTier);
+                if (currentMeta && !currentMeta.isUnlocked) {
+                    showLockedTierView(currentMeta);
+                } else {
+                    showUnlockedDashboardView();
+                    loadTierData();
+                }
+            });
+        }
+
+        function renderRoadmapTierSelectors() {
+            const html = roadmapsMeta.map(m => {
+                const isActive = m.tier === currentTier;
+                const isLocked = !m.isUnlocked;
+                return `
+                    <button onclick="switchTier('${m.tier}')" class="px-3.5 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-2 ${
+                        isActive ? 'bg-gradient-to-r from-emerald-500 to-cyan-500 text-black shadow-md shadow-emerald-500/20' : 'text-slate-400 hover:text-white hover:bg-obsidian-900'
+                    }">
+                        <span>${m.tier}</span>
+                        ${isLocked ? `<span class="px-1.5 py-0.2 rounded bg-violet-500/20 text-violet-300 text-[9px] border border-violet-500/30">BETA</span>` : `<span class="font-mono text-[10px] opacity-80">(${m.solvedProblems}/${m.totalProblems})</span>`}
+                    </button>
+                `;
+            }).join('');
+
+            document.getElementById('roadmap-tier-selector').innerHTML = html;
+            document.getElementById('roadmap-tier-selector-mobile').innerHTML = html;
+        }
+
+        function switchTier(tier) {
+            currentTier = tier;
+            renderRoadmapTierSelectors();
+            const meta = roadmapsMeta.find(m => m.tier === tier);
+            if (meta && !meta.isUnlocked) {
+                showLockedTierView(meta);
+            } else {
+                showUnlockedDashboardView();
+                loadTierData();
+            }
+        }
+
+        function showLockedTierView(meta) {
+            document.getElementById('unlocked-dashboard-view').classList.add('hidden');
+            const container = document.getElementById('beta-locked-container');
+            container.classList.remove('hidden');
+            document.getElementById('locked-tier-title').innerText = `${meta.tier} Tier Locked`;
+            document.getElementById('locked-tier-desc').innerText = `Drop ${meta.expectedFileName} into your root project directory to unlock the complete curriculum.`;
+            document.getElementById('locked-filename').innerText = meta.expectedFileName;
+            lucide.createIcons();
+        }
+
+        function showUnlockedDashboardView() {
+            document.getElementById('beta-locked-container').classList.add('hidden');
+            document.getElementById('unlocked-dashboard-view').classList.remove('hidden');
+        }
+
+        function loadTierData() {
+            apiFetch(`/api/problems?tier=${currentTier}`).then(data => {
                 problemsData = data;
                 populateTopicsFilter();
                 renderTable();
@@ -564,7 +710,7 @@
         }
 
         function loadCoachInsights() {
-            apiFetch('/api/coach/insights').then(data => {
+            apiFetch(`/api/coach/insights?tier=${currentTier}`).then(data => {
                 document.getElementById('coach-track-badge').innerText = data.summary.trackStatus;
                 document.getElementById('coach-directive').innerText = data.aiFeedback;
                 document.getElementById('coach-reason').innerText = `Diagnosis: ${data.summary.adaptationReason}`;
@@ -581,31 +727,26 @@
             
             const ansBox = document.getElementById('ai-answer');
             ansBox.classList.remove('hidden');
-            ansBox.innerText = "Coach thinking...";
+            ansBox.innerText = "Mentor thinking...";
 
-            apiFetch('/api/coach/ask', { method: 'POST', body: JSON.stringify({ question: q }) })
+            apiFetch('/api/coach/ask', { method: 'POST', body: JSON.stringify({ question: q, tier: currentTier }) })
                 .then(res => {
                     if (res && res.answer) {
                         ansBox.innerText = res.answer;
                     } else if (res && res.error) {
                         ansBox.innerText = "⚠️ Error: " + res.error;
-                    } else {
-                        ansBox.innerText = "⚠️ Could not parse server response.";
                     }
-                })
-                .catch(err => {
-                    ansBox.innerText = "⚠️ Network Error: " + err.message;
                 });
         }
 
         function triggerCoachEmail() {
-            apiFetch('/api/coach/send-email', { method: 'POST' }).then(res => {
+            apiFetch('/api/coach/send-email', { method: 'POST', body: JSON.stringify({ tier: currentTier }) }).then(res => {
                 showToast(res.message, res.success ? 'success' : 'error');
             });
         }
 
         function triggerCelebration() {
-            confetti({ particleCount: 120, spread: 80, origin: { y: 0.6 }, colors: ['#10b981', '#06b6d4', '#6366f1', '#ec4899', '#f59e0b'] });
+            confetti({ particleCount: 120, spread: 80, origin: { y: 0.6 }, colors: ['#10b981', '#06b6d4', '#8b5cf6', '#ec4899'] });
         }
 
         function updateProgress(problemId, key, value) {
@@ -626,6 +767,7 @@
                 renderCharts();
                 updateTopMetrics();
                 loadCoachInsights();
+                loadRoadmapsMeta();
             });
         }
 
@@ -645,20 +787,16 @@
                 btn.innerHTML = `<i data-lucide="loader-2" class="w-3.5 h-3.5 animate-spin"></i> <span>Saving...</span>`;
                 lucide.createIcons();
             }
-            if (statusLabel) {
-                statusLabel.innerText = "Saving to database...";
-                statusLabel.className = "text-xs text-amber-400 font-medium font-mono";
-            }
 
             apiFetch(`/api/progress/${problemId}/notes`, {
                 method: 'PUT',
                 body: JSON.stringify({ pattern_notes: notesText })
             }).then(() => {
                 if (statusLabel) {
-                    statusLabel.innerText = "Saved successfully! ✓";
-                    statusLabel.className = "text-xs text-emerald-400 font-medium font-mono";
+                    statusLabel.innerText = "Saved to DB ✓";
+                    statusLabel.className = "text-xs text-emerald-400 font-mono";
                 }
-                showToast(`Notes saved for problem #${problemId}!`);
+                showToast(`Notes saved for #${problemId}`);
                 if (btn) {
                     btn.disabled = false;
                     btn.innerHTML = `<i data-lucide="check" class="w-3.5 h-3.5"></i> <span>Saved!</span>`;
@@ -667,17 +805,6 @@
                         btn.innerHTML = `<i data-lucide="save" class="w-3.5 h-3.5"></i> <span>Save Notes</span>`;
                         lucide.createIcons();
                     }, 2000);
-                }
-            }).catch(err => {
-                if (statusLabel) {
-                    statusLabel.innerText = "Error saving notes!";
-                    statusLabel.className = "text-xs text-rose-400 font-medium font-mono";
-                }
-                showToast("Failed to save notes", "error");
-                if (btn) {
-                    btn.disabled = false;
-                    btn.innerHTML = `<i data-lucide="save" class="w-3.5 h-3.5"></i> <span>Retry Save</span>`;
-                    lucide.createIcons();
                 }
             });
         }
@@ -694,14 +821,12 @@
             });
         }
 
-        // STOPWATCH / TIME TRACKER FUNCTIONALITY
         function toggleTimer(problemId, event) {
             if (event) event.stopPropagation();
             const timerBtn = document.getElementById(`timer-btn-${problemId}`);
             const display = document.getElementById(`timer-display-${problemId}`);
             
             if (activeTimers[problemId]) {
-                // STOP TIMER
                 clearInterval(activeTimers[problemId].interval);
                 const elapsedMin = Math.max(1, Math.round(activeTimers[problemId].seconds / 60));
                 delete activeTimers[problemId];
@@ -725,7 +850,6 @@
                 });
 
             } else {
-                // START TIMER
                 activeTimers[problemId] = { seconds: 0 };
                 if (timerBtn) {
                     timerBtn.className = "px-3 py-1.5 bg-rose-500/20 text-rose-300 border border-rose-500/30 rounded-xl text-xs font-bold flex items-center gap-1.5 hover:bg-rose-500/30 transition animate-pulse";
@@ -749,12 +873,11 @@
             return d.toISOString().split('T')[0];
         }
 
-        // ANIMATED COUNTER ON LOAD
         function animateValue(id, endValue) {
             const el = document.getElementById(id);
             if (!el) return;
             const startValue = 0;
-            const duration = 700;
+            const duration = 600;
             const startTime = performance.now();
 
             function update(currentTime) {
@@ -798,25 +921,13 @@
             if (category === 'diff') {
                 ['ALL', 'Easy', 'Medium', 'Hard'].forEach(v => {
                     const btn = document.getElementById(`chip-diff-${v}`);
-                    if (btn) {
-                        if (v === value) {
-                            btn.className = "px-3 py-1 rounded-xl text-xs font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 transition";
-                        } else {
-                            btn.className = "px-3 py-1 rounded-xl text-xs font-bold bg-obsidian-950 text-slate-400 border border-obsidian-800 hover:text-white transition";
-                        }
-                    }
+                    if (btn) btn.className = v === value ? "px-3 py-1 rounded-xl text-xs font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 transition" : "px-3 py-1 rounded-xl text-xs font-bold bg-obsidian-950 text-slate-400 border border-obsidian-800 hover:text-white transition";
                 });
                 selectedDiffChip = value;
             } else if (category === 'status') {
                 ['ALL', 'Todo', 'Hint-solved', 'Solved', 'Mastered'].forEach(v => {
                     const btn = document.getElementById(`chip-status-${v}`);
-                    if (btn) {
-                        if (v === value) {
-                            btn.className = "px-3 py-1 rounded-xl text-xs font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 transition";
-                        } else {
-                            btn.className = "px-3 py-1 rounded-xl text-xs font-bold bg-obsidian-950 text-slate-400 border border-obsidian-800 hover:text-white transition";
-                        }
-                    }
+                    if (btn) btn.className = v === value ? "px-3 py-1 rounded-xl text-xs font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 transition" : "px-3 py-1 rounded-xl text-xs font-bold bg-obsidian-950 text-slate-400 border border-obsidian-800 hover:text-white transition";
                 });
                 selectedStatusChip = value;
             }
@@ -1069,6 +1180,7 @@
             }
         });
 
+        initCyberCanvas();
         initApp();
         lucide.createIcons();
     </script>
