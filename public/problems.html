@@ -17,6 +17,7 @@
 </head>
 <body class="min-h-screen flex flex-col">
 
+    <!-- GLOBAL NAVBAR -->
     <nav class="sticky top-0 z-50 glass-card border-b border-obsidian-800 px-6 py-3.5 flex items-center justify-between">
         <div class="flex items-center gap-3">
             <div class="p-2 bg-emerald-500/10 text-emerald-400 rounded-xl border border-emerald-500/20">
@@ -33,14 +34,35 @@
             <a href="/analytics" class="hover:text-emerald-400 transition">Analytics</a>
             <a href="/ai-coach" class="hover:text-emerald-400 transition">AI Mentor</a>
         </div>
+
+        <button onclick="logout()" class="px-3 py-1.5 bg-obsidian-900 text-slate-400 rounded-xl border border-obsidian-800 hover:text-white text-xs">Logout</button>
     </nav>
 
+    <!-- MAIN CONTENT -->
     <main class="max-w-7xl mx-auto px-6 py-8 flex-1 w-full space-y-6">
-        <div class="flex justify-between items-center">
-            <h1 class="text-2xl font-black text-white">Master Problem Workspace</h1>
-            <input type="text" id="search" oninput="renderTable()" placeholder="Search problem or logic note..." class="bg-obsidian-900 border border-obsidian-800 text-xs px-4 py-2 rounded-xl text-slate-200 outline-none w-64 focus:border-emerald-500">
+        
+        <!-- HEADER & TRACK SELECTOR TABS -->
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div>
+                <h1 class="text-2xl font-black text-white">Master Problem Workspace</h1>
+                <p class="text-xs text-slate-400 mt-1">Select a track level to view problem lists and update status</p>
+            </div>
+
+            <!-- DEDICATED TRACK SWITCHER TABS -->
+            <div class="flex items-center gap-2 bg-obsidian-900 p-1.5 rounded-2xl border border-obsidian-800">
+                <button onclick="switchTrack('beginner')" id="tab-beginner" class="px-4 py-2 rounded-xl text-xs font-bold transition">Beginner</button>
+                <button onclick="switchTrack('intermediate')" id="tab-intermediate" class="px-4 py-2 rounded-xl text-xs font-bold transition">Intermediate</button>
+                <button onclick="switchTrack('advanced')" id="tab-advanced" class="px-4 py-2 rounded-xl text-xs font-bold transition">Advanced</button>
+            </div>
         </div>
 
+        <!-- SEARCH BAR -->
+        <div class="flex justify-between items-center">
+            <input type="text" id="search" oninput="renderTable()" placeholder="Search problem or topic..." class="bg-obsidian-900 border border-obsidian-800 text-xs px-4 py-2.5 rounded-xl text-slate-200 outline-none w-72 focus:border-emerald-500">
+            <span id="problem-count" class="text-xs font-mono text-slate-400">0 Problems</span>
+        </div>
+
+        <!-- PROBLEMS TABLE -->
         <div class="glass-card rounded-3xl overflow-hidden border border-obsidian-800">
             <table class="w-full text-left text-xs">
                 <thead class="bg-obsidian-900 text-slate-400 font-bold border-b border-obsidian-800 uppercase">
@@ -61,28 +83,91 @@
     </main>
 
     <script>
+        // Session Check: Redirect to login if token is missing
         const jwtToken = localStorage.getItem('dsa_jwt');
+        if (!jwtToken) {
+            window.location.href = '/';
+        }
+
         let problems = [];
+        let currentTrack = new URLSearchParams(window.location.search).get('track') || 'beginner';
+
+        function updateTabHighlight() {
+            ['beginner', 'intermediate', 'advanced'].forEach(t => {
+                const btn = document.getElementById(`tab-${t}`);
+                if (btn) {
+                    if (t === currentTrack) {
+                        btn.className = "px-4 py-2 rounded-xl text-xs font-bold transition bg-emerald-500 text-black shadow-lg shadow-emerald-500/20";
+                    } else {
+                        btn.className = "px-4 py-2 rounded-xl text-xs font-bold transition text-slate-400 hover:text-white";
+                    }
+                }
+            });
+        }
+
+        function switchTrack(track) {
+            currentTrack = track;
+            window.history.pushState({}, '', `/problems?track=${track}`);
+            updateTabHighlight();
+            loadProblems();
+        }
 
         function loadProblems() {
-            const urlParams = new URLSearchParams(window.location.search);
-            const track = urlParams.get('track') || 'beginner';
-
-            fetch(`/api/problems?track=${track}`, { headers: { 'Authorization': `Bearer ${jwtToken}` } })
-                .then(r => r.json())
-                .then(data => { problems = data; renderTable(); });
+            updateTabHighlight();
+            fetch(`/api/problems?track=${currentTrack}`, {
+                headers: { 'Authorization': `Bearer ${jwtToken}` }
+            })
+            .then(res => {
+                if (res.status === 401 || res.status === 403) {
+                    localStorage.removeItem('dsa_jwt');
+                    window.location.href = '/';
+                    return null;
+                }
+                return res.json();
+            })
+            .then(data => {
+                if (!data) return;
+                // Array check prevents "TypeError: problems.filter is not a function"
+                if (Array.isArray(data)) {
+                    problems = data;
+                } else {
+                    problems = [];
+                }
+                renderTable();
+            })
+            .catch(err => {
+                console.error("Error loading problems:", err);
+                problems = [];
+                renderTable();
+            });
         }
 
         function renderTable() {
-            const query = document.getElementById('search').value.toLowerCase();
-            const filtered = problems.filter(p => p.name.toLowerCase().includes(query) || p.topic.toLowerCase().includes(query));
+            const query = (document.getElementById('search').value || '').toLowerCase();
+            const filtered = Array.isArray(problems) ? problems.filter(p => 
+                (p.name && p.name.toLowerCase().includes(query)) || 
+                (p.topic && p.topic.toLowerCase().includes(query))
+            ) : [];
 
-            document.getElementById('problems-body').innerHTML = filtered.map(p => `
+            document.getElementById('problem-count').innerText = `${filtered.length} Problems`;
+
+            const tbody = document.getElementById('problems-body');
+            if (filtered.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="8" class="p-8 text-center text-slate-500">No problems found for '${currentTrack}' track. Ensure Excel files are seeded.</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = filtered.map(p => `
                 <tr class="hover:bg-obsidian-900/50 transition">
                     <td class="p-4 font-mono text-slate-500">${p.id}</td>
                     <td class="p-4 font-bold text-white">${p.name}</td>
                     <td class="p-4 text-slate-400">${p.topic}</td>
-                    <td class="p-4"><span class="px-2 py-0.5 rounded text-[10px] font-bold ${p.difficulty === 'Easy' ? 'bg-cyan-500/20 text-cyan-300' : 'bg-amber-500/20 text-amber-300'}">${p.difficulty}</span></td>
+                    <td class="p-4">
+                        <span class="px-2 py-0.5 rounded text-[10px] font-bold ${
+                            p.difficulty === 'Easy' ? 'bg-cyan-500/20 text-cyan-300' :
+                            p.difficulty === 'Medium' ? 'bg-amber-500/20 text-amber-300' : 'bg-rose-500/20 text-rose-300'
+                        }">${p.difficulty}</span>
+                    </td>
                     <td class="p-4">
                         <select onchange="updateStatus(${p.id}, this.value)" class="bg-obsidian-950 border border-obsidian-800 rounded px-2 py-1 text-slate-200">
                             <option value="Todo" ${p.status === 'Todo' ? 'selected' : ''}>Todo</option>
@@ -107,6 +192,11 @@
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${jwtToken}` },
                 body: JSON.stringify({ status })
             });
+        }
+
+        function logout() {
+            localStorage.removeItem('dsa_jwt');
+            window.location.href = '/';
         }
 
         loadProblems();

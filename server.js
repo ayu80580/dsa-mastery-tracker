@@ -264,5 +264,48 @@ app.post('/api/auth/login', async (req, res) => {
     }
 });
 
+// GET /api/problems?track=beginner | intermediate | advanced
+app.get('/api/problems', authenticateToken, async (req, res) => {
+    try {
+        const trackLevel = (req.query.track || 'beginner').toLowerCase().trim();
+        const query = `
+            SELECT p.*, COALESCE(up.status, 'Todo') as status, up.solved_date,
+                   COALESCE(up.time_min, 0) as time_min, COALESCE(up.revisions, 0) as revisions,
+                   up.pattern_notes, up.code_snippet
+            FROM problems p
+            LEFT JOIN user_progress up ON p.id = up.problem_id AND up.user_id = $1
+            WHERE COALESCE(p.track_level, 'beginner') = $2
+            ORDER BY p.id ASC
+        `;
+        const result = await pool.query(query, [req.user.userId, trackLevel]);
+        res.json(result.rows || []);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// GET /api/tracks/status
+app.get('/api/tracks/status', authenticateToken, async (req, res) => {
+    try {
+        const countsRes = await pool.query(`
+            SELECT COALESCE(track_level, 'beginner') as track_level, COUNT(*)::int as count 
+            FROM problems GROUP BY COALESCE(track_level, 'beginner')
+        `);
+
+        const counts = { beginner: 0, intermediate: 0, advanced: 0 };
+        countsRes.rows.forEach(r => { counts[r.track_level] = r.count; });
+
+        res.json({
+            tracks: {
+                beginner: { name: 'Beginner Roadmap', problemCount: counts.beginner || 100 },
+                intermediate: { name: 'Intermediate Roadmap', problemCount: counts.intermediate || 150 },
+                advanced: { name: 'Advanced Roadmap', problemCount: counts.advanced || 200 }
+            }
+        });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`Dynamic Multi-Track Server Running on http://localhost:${PORT}`));
