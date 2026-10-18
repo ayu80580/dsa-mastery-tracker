@@ -35,20 +35,15 @@ async function seedTierFile(filePath, defaultTrackSlug = 'beginner') {
         const row = rows[r];
         if (!row || row.length < 2) continue;
 
-        // Extract ID and skip if NaN or missing
         const rawId = row[0];
         const parsedId = safeParseInt(rawId, null);
         
-        // If ID cell is empty or non-numeric (e.g. text/headers), generate or fallback safely
         const id = (parsedId !== null && parsedId > 0) ? parsedId : (r + 10000);
-        
-        // Safely parse week (defaults to 1 if NaN)
         const week = safeParseInt(row[1], 1);
         
         const topic = row[2] ? String(row[2]).trim() : 'General';
         const name = row[3] ? String(row[3]).trim() : '';
         
-        // Skip row if problem name is empty
         if (!name || name.toLowerCase() === 'problem (click to open)') continue;
 
         const difficulty = row[4] ? String(row[4]).trim() : 'Easy';
@@ -61,7 +56,6 @@ async function seedTierFile(filePath, defaultTrackSlug = 'beginner') {
             url = `https://leetcode.com/problems/${slug}/`;
         }
 
-        // Execute parameterized query guaranteed to have valid integer types
         await pool.query(`
             INSERT INTO problems (id, week, topic, name, difficulty, priority, url, track_level)
             VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
@@ -82,10 +76,10 @@ async function seedTierFile(filePath, defaultTrackSlug = 'beginner') {
 }
 
 async function seedAll() {
-    console.log('⚡ Initializing Database Schema...');
+    console.log('⚡ Initializing & Migrating Database Schema...');
     
     try {
-        // Ensure Database Tables Exist
+        // 1. Create base tables if they don't exist
         await pool.query(`
             CREATE TABLE IF NOT EXISTS users (
                 id SERIAL PRIMARY KEY,
@@ -122,7 +116,19 @@ async function seedAll() {
             );
         `);
 
-        // Scan root directory for all .xlsx files
+        // 2. Explicitly alter pre-existing tables to add any missing columns
+        await pool.query(`
+            ALTER TABLE problems ADD COLUMN IF NOT EXISTS url TEXT;
+            ALTER TABLE problems ADD COLUMN IF NOT EXISTS track_level TEXT DEFAULT 'beginner';
+            ALTER TABLE users ADD COLUMN IF NOT EXISTS tier_access TEXT DEFAULT 'pro';
+            ALTER TABLE users ADD COLUMN IF NOT EXISTS last_track_status TEXT;
+            ALTER TABLE users ADD COLUMN IF NOT EXISTS last_email_date TEXT;
+            ALTER TABLE user_progress ADD COLUMN IF NOT EXISTS pattern_notes TEXT;
+            ALTER TABLE user_progress ADD COLUMN IF NOT EXISTS code_snippet TEXT;
+            ALTER TABLE user_progress ADD COLUMN IF NOT EXISTS time_min INT DEFAULT 0;
+        `);
+
+        // 3. Scan root directory for all .xlsx files
         const rootFiles = fs.readdirSync(__dirname).filter(f => f.endsWith('.xlsx') && !f.startsWith('~$'));
         
         for (const file of rootFiles) {
