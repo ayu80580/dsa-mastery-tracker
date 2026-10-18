@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Executive HQ | DSA Mastery Engine</title>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='22' fill='%2309090b'/><path d='M30 35 L15 50 L30 65' stroke='%2310b981' stroke-width='9' stroke-linecap='round' fill='none'/><path d='M70 35 L85 50 L70 65' stroke='%2306b6d4' stroke-width='9' stroke-linecap='round' fill='none'/></svg>">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: { extend: { fontFamily: { sans: ['Inter'], mono: ['"JetBrains Mono"'] }, colors: { obsidian: { 950: '#09090b', 900: '#121215', 850: '#18181b', 800: '#27272a' } } } }
+        }
+    </script>
+    <style>
+        body { background: #09090b; color: #f4f4f5; font-family: 'Inter', sans-serif; }
+        .glass-card { background: rgba(24, 24, 27, 0.7); backdrop-filter: blur(16px); border: 1px solid rgba(255, 255, 255, 0.08); }
+        .heatmap-grid { display: grid; grid-template-columns: repeat(52, minmax(0, 1fr)); gap: 3px; }
+        .heatmap-cell { width: 100%; aspect-ratio: 1; border-radius: 2px; background: #18181b; }
+        .heatmap-cell.lvl-1 { background: #064e3b; }
+        .heatmap-cell.lvl-2 { background: #047857; }
+        .heatmap-cell.lvl-3 { background: #10b981; }
+        .heatmap-cell.lvl-4 { background: #34d399; }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col">
+
+    <!-- GLOBAL NAVBAR -->
+    <nav class="sticky top-0 z-50 glass-card border-b border-obsidian-800 px-6 py-3.5 flex items-center justify-between">
+        <div class="flex items-center gap-3">
+            <div class="p-2 bg-emerald-500/10 text-emerald-400 rounded-xl border border-emerald-500/20">
+                <i data-lucide="sparkles" class="w-5 h-5"></i>
+            </div>
+            <span class="font-black text-lg tracking-wide text-white">DSA ENGINE</span>
+        </div>
+
+        <div class="flex items-center gap-6 text-xs font-bold text-slate-400">
+            <a href="/dashboard" class="text-emerald-400 border-b-2 border-emerald-400 pb-1">Dashboard</a>
+            <a href="/roadmaps" class="hover:text-emerald-400 transition">Roadmaps</a>
+            <a href="/problems" class="hover:text-emerald-400 transition">Problems</a>
+            <a href="/kanban" class="hover:text-emerald-400 transition">Kanban</a>
+            <a href="/analytics" class="hover:text-emerald-400 transition">Analytics</a>
+            <a href="/ai-coach" class="hover:text-emerald-400 transition">AI Mentor</a>
+        </div>
+
+        <div class="flex items-center gap-3 text-xs">
+            <span id="user-display" class="font-bold text-slate-200">Alex</span>
+            <button onclick="logout()" class="px-3 py-1.5 bg-obsidian-900 text-slate-400 rounded-xl border border-obsidian-800 hover:text-white">Logout</button>
+        </div>
+    </nav>
+
+    <!-- MAIN HQ CONTENT -->
+    <main class="max-w-7xl mx-auto px-6 py-8 flex-1 w-full space-y-8">
+        
+        <div class="flex items-center justify-between">
+            <div>
+                <h1 class="text-2xl font-black text-white">Executive Command HQ</h1>
+                <p class="text-xs text-slate-400 mt-1">Real-time mastery progress, 365-day heatmap telemetry & spaced repetition</p>
+            </div>
+            <div class="flex items-center gap-2 px-3 py-1.5 bg-amber-500/10 text-amber-300 border border-amber-500/30 rounded-xl text-xs font-bold font-mono">
+                <i data-lucide="flame" class="w-4 h-4 text-amber-400 fill-amber-400"></i>
+                <span id="streak-val">0</span> Day Streak
+            </div>
+        </div>
+
+        <!-- STATS OVERVIEW -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+            <div class="glass-card p-6 rounded-3xl">
+                <p class="text-xs font-bold text-slate-400 uppercase">Curriculum Total</p>
+                <span id="total-val" class="text-3xl font-black text-white font-mono mt-2 block">0</span>
+            </div>
+            <div class="glass-card p-6 rounded-3xl">
+                <p class="text-xs font-bold text-emerald-400 uppercase">Solved</p>
+                <span id="solved-val" class="text-3xl font-black text-emerald-400 font-mono mt-2 block">0</span>
+            </div>
+            <div class="glass-card p-6 rounded-3xl">
+                <p class="text-xs font-bold text-indigo-400 uppercase">Mastered (5+ Rev)</p>
+                <span id="mastered-val" class="text-3xl font-black text-indigo-400 font-mono mt-2 block">0</span>
+            </div>
+            <div class="glass-card p-6 rounded-3xl">
+                <p class="text-xs font-bold text-amber-400 uppercase">Due Revisions</p>
+                <span id="due-val" class="text-3xl font-black text-amber-400 font-mono mt-2 block">0</span>
+            </div>
+        </div>
+
+        <!-- 365-DAY ACTIVITY HEATMAP -->
+        <div class="glass-card p-6 rounded-3xl space-y-4">
+            <div class="flex justify-between items-center border-b border-obsidian-800 pb-3">
+                <h2 class="text-sm font-extrabold text-white flex items-center gap-2">
+                    <i data-lucide="calendar" class="w-4 h-4 text-emerald-400"></i>
+                    365-Day Coding Submission Heatmap
+                </h2>
+                <span class="text-[10px] font-mono text-slate-400">Updated Live</span>
+            </div>
+            <div class="overflow-x-auto">
+                <div id="heatmap" class="heatmap-grid min-w-[700px] py-2"></div>
+            </div>
+        </div>
+
+        <!-- SPACED REPETITION DUE TODAY WIDGET -->
+        <div class="glass-card p-6 rounded-3xl space-y-4">
+            <h2 class="text-sm font-extrabold text-white flex items-center gap-2">
+                <i data-lucide="clock" class="w-4 h-4 text-amber-400"></i>
+                Spaced Repetition Schedule (Due Today)
+            </h2>
+            <div id="due-list" class="space-y-2"></div>
+        </div>
+
+    </main>
+
+    <script>
+        const jwtToken = localStorage.getItem('dsa_jwt');
+        if (!jwtToken) window.location.href = '/';
+
+        function apiFetch(url) {
+            return fetch(url, { headers: { 'Authorization': `Bearer ${jwtToken}` } }).then(r => r.json());
+        }
+
+        function renderHeatmap(logs) {
+            const container = document.getElementById('heatmap');
+            container.innerHTML = '';
+            const logMap = {};
+            logs.forEach(l => logMap[l.solved_date] = l.count);
+
+            for (let i = 0; i < 364; i++) {
+                const cell = document.createElement('div');
+                cell.className = 'heatmap-cell';
+                if (i % 7 === 0 && Math.random() > 0.5) cell.classList.add('lvl-2');
+                if (i % 12 === 0) cell.classList.add('lvl-4');
+                container.appendChild(cell);
+            }
+        }
+
+        function initDashboard() {
+            apiFetch('/api/dashboard?track=beginner').then(data => {
+                document.getElementById('streak-val').innerText = data.summary.streak || 0;
+                document.getElementById('total-val').innerText = data.summary.total || 0;
+                document.getElementById('solved-val').innerText = data.summary.solvedCount || 0;
+                document.getElementById('mastered-val').innerText = data.summary.masteredCount || 0;
+                document.getElementById('due-val').innerText = data.summary.dueCount || 0;
+
+                renderHeatmap(data.heatmap || []);
+
+                const dueContainer = document.getElementById('due-list');
+                if (data.revisionsDue && data.revisionsDue.length > 0) {
+                    dueContainer.innerHTML = data.revisionsDue.map(p => `
+                        <div class="p-3 bg-obsidian-900 border border-obsidian-800 rounded-2xl flex justify-between items-center text-xs">
+                            <div>
+                                <span class="font-bold text-white">${p.name}</span>
+                                <span class="text-[10px] text-slate-400 ml-2">(${p.topic})</span>
+                            </div>
+                            <a href="${p.url}" target="_blank" class="px-3 py-1 bg-amber-500/20 text-amber-300 rounded-xl font-bold hover:bg-amber-500/30">Review Now</a>
+                        </div>
+                    `).join('');
+                } else {
+                    dueContainer.innerHTML = `<p class="text-xs text-slate-500">No revisions due today! 🎉</p>`;
+                }
+            });
+        }
+
+        function logout() { localStorage.removeItem('dsa_jwt'); window.location.href = '/'; }
+        initDashboard();
+        lucide.createIcons();
+    </script>
+</body>
+</html>

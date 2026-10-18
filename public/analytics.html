@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Deep Analytics | DSA Mastery Engine</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script>
+        tailwind.config = { darkMode: 'class', theme: { extend: { colors: { obsidian: { 950: '#09090b', 900: '#121215', 800: '#27272a' } } } } }
+    </script>
+    <style>
+        body { background: #09090b; color: #f4f4f5; font-family: 'Inter', sans-serif; }
+        .glass-card { background: rgba(24, 24, 27, 0.7); backdrop-filter: blur(16px); border: 1px solid rgba(255, 255, 255, 0.08); }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col">
+
+    <nav class="sticky top-0 z-50 glass-card border-b border-obsidian-800 px-6 py-3.5 flex items-center justify-between">
+        <div class="flex items-center gap-3">
+            <div class="p-2 bg-emerald-500/10 text-emerald-400 rounded-xl border border-emerald-500/20">
+                <i data-lucide="sparkles" class="w-5 h-5"></i>
+            </div>
+            <span class="font-black text-lg tracking-wide text-white">DSA ENGINE</span>
+        </div>
+
+        <div class="flex items-center gap-6 text-xs font-bold text-slate-400">
+            <a href="/dashboard" class="hover:text-emerald-400 transition">Dashboard</a>
+            <a href="/roadmaps" class="hover:text-emerald-400 transition">Roadmaps</a>
+            <a href="/problems" class="hover:text-emerald-400 transition">Problems</a>
+            <a href="/kanban" class="hover:text-emerald-400 transition">Kanban</a>
+            <a href="/analytics" class="text-emerald-400 border-b-2 border-emerald-400 pb-1">Analytics</a>
+            <a href="/ai-coach" class="hover:text-emerald-400 transition">AI Mentor</a>
+        </div>
+    </nav>
+
+    <main class="max-w-7xl mx-auto px-6 py-8 flex-1 w-full space-y-8">
+        <h1 class="text-2xl font-black text-white">Deep Analytics & Topic Breakdown</h1>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div class="glass-card p-6 rounded-3xl space-y-4">
+                <h3 class="text-xs font-bold uppercase text-slate-400">Topic Completion Distribution</h3>
+                <div class="w-full h-64"><canvas id="topicChart"></canvas></div>
+            </div>
+            <div class="glass-card p-6 rounded-3xl space-y-4">
+                <h3 class="text-xs font-bold uppercase text-amber-400">Hint Dependency Weak Spot Radar</h3>
+                <div class="w-full h-64"><canvas id="hintChart"></canvas></div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        const jwtToken = localStorage.getItem('dsa_jwt');
+
+        fetch('/api/analytics/deep?track=beginner', { headers: { 'Authorization': `Bearer ${jwtToken}` } })
+            .then(r => r.json())
+            .then(data => {
+                const topics = data.topics.map(t => t.topic);
+                const solved = data.topics.map(t => t.solved);
+                const hints = data.topics.map(t => t.hint_used);
+
+                new Chart(document.getElementById('topicChart'), {
+                    type: 'bar',
+                    data: { labels: topics, datasets: [{ label: 'Solved', data: solved, backgroundColor: '#10b981' }] },
+                    options: { responsive: true, maintainAspectRatio: false }
+                });
+
+                new Chart(document.getElementById('hintChart'), {
+                    type: 'radar',
+                    data: { labels: topics, datasets: [{ label: 'Hint Reliance', data: hints, backgroundColor: 'rgba(245, 158, 11, 0.2)', borderColor: '#f59e0b' }] },
+                    options: { responsive: true, maintainAspectRatio: false }
+                });
+            });
+
+        lucide.createIcons();
+    </script>
+</body>
+</html>

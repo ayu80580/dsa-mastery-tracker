@@ -3,1185 +3,191 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DSA Mastery Engine | Multi-Tier AI Platform</title>
-
-    <!-- BRAND TAB FAVICON -->
-    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='22' fill='%2309090b'/><path d='M30 35 L15 50 L30 65' stroke='%2310b981' stroke-width='9' stroke-linecap='round' stroke-linejoin='round' fill='none'/><path d='M70 35 L85 50 L70 65' stroke='%2306b6d4' stroke-width='9' stroke-linecap='round' stroke-linejoin='round' fill='none'/><path d='M58 28 L42 72' stroke='%238b5cf6' stroke-width='8' stroke-linecap='round' fill='none'/></svg>">
-
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
-
+    <title>DSA Mastery Engine | Executive Landing & Auth Portal</title>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='22' fill='%2309090b'/><path d='M30 35 L15 50 L30 65' stroke='%2310b981' stroke-width='9' stroke-linecap='round' fill='none'/><path d='M70 35 L85 50 L70 65' stroke='%2306b6d4' stroke-width='9' stroke-linecap='round' fill='none'/></svg>">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
-    
     <script>
         tailwind.config = {
             darkMode: 'class',
             theme: {
                 extend: {
-                    fontFamily: {
-                        sans: ['"Plus Jakarta Sans"', 'sans-serif'],
-                        mono: ['"JetBrains Mono"', 'monospace'],
-                    },
-                    colors: {
-                        obsidian: {
-                            950: '#09090b',
-                            900: '#121215',
-                            850: '#18181b',
-                            800: '#27272a',
-                            700: '#3f3f46',
-                        }
-                    }
+                    fontFamily: { sans: ['Inter'], mono: ['"JetBrains Mono"'] },
+                    colors: { obsidian: { 950: '#09090b', 900: '#121215', 850: '#18181b', 800: '#27272a' } }
                 }
             }
         }
     </script>
-
     <style>
-        body {
-            background-color: #09090b;
-            color: #f4f4f5;
-            font-family: 'Plus Jakarta Sans', sans-serif;
-            overflow-x: hidden;
-        }
-
-        #cyber-canvas {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100vw;
-            height: 100vh;
-            z-index: -1;
-            pointer-events: none;
-        }
-
-        .glass-card {
-            background: rgba(24, 24, 27, 0.65);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
-        }
-
-        .glass-card-glow {
-            box-shadow: 0 0 35px rgba(16, 185, 129, 0.15), 0 10px 30px rgba(0, 0, 0, 0.5);
-        }
-
-        .glass-card-hover { transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1); }
-        .glass-card-hover:hover { 
-            border-color: rgba(16, 185, 129, 0.4); 
-            box-shadow: 0 12px 35px -10px rgba(16, 185, 129, 0.25);
-            transform: translateY(-2px);
-        }
-        
-        .kanban-column { min-height: 480px; background: rgba(18, 18, 21, 0.6); border: 1px solid rgba(255, 255, 255, 0.05); }
-
-        ::-webkit-scrollbar { width: 6px; height: 6px; }
-        ::-webkit-scrollbar-track { background: #09090b; }
-        ::-webkit-scrollbar-thumb { background: #27272a; border-radius: 9999px; }
-
-        @keyframes scanline {
-            0% { transform: translateY(-100%); }
-            100% { transform: translateY(1000%); }
-        }
-        .scanline-effect {
-            animation: scanline 8s linear infinite;
-        }
+        body { background: #09090b; color: #f4f4f5; font-family: 'Inter', sans-serif; }
+        .glass-card { background: rgba(24, 24, 27, 0.7); backdrop-filter: blur(16px); border: 1px solid rgba(255, 255, 255, 0.08); }
+        .glow-emerald { box-shadow: 0 0 50px -12px rgba(16, 185, 129, 0.25); }
     </style>
 </head>
+<body class="min-h-screen flex flex-col justify-between relative overflow-x-hidden">
 
-<body class="min-h-screen pb-20 flex flex-col font-sans">
+    <!-- BACKGROUND GLOW EFFECTS -->
+    <div class="absolute top-0 left-1/2 -translate-x-1/2 w-[1000px] h-[400px] bg-gradient-to-b from-emerald-500/10 via-cyan-500/5 to-transparent blur-3xl pointer-events-none"></div>
 
-    <!-- BACKGROUND CYBER CANVAS ANIMATION -->
-    <canvas id="cyber-canvas"></canvas>
-
-    <!-- FLOATING TOAST CONTAINER -->
-    <div id="toast-container" class="fixed bottom-6 right-6 z-50 flex flex-col gap-3 pointer-events-none"></div>
-
-    <!-- COMMAND PALETTE (CMD+K) -->
-    <div id="command-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-obsidian-950/80 backdrop-blur-md p-4">
-        <div class="glass-card rounded-3xl w-full max-w-2xl border border-emerald-500/30 shadow-2xl overflow-hidden flex flex-col max-h-[80vh]">
-            <div class="p-4 border-b border-obsidian-800 flex items-center gap-3 bg-obsidian-900/90">
-                <i data-lucide="search" class="w-5 h-5 text-emerald-400"></i>
-                <input type="text" id="cmd-search" oninput="filterCommandPalette()" placeholder="Search problem, topic, or key logic pattern..." class="w-full bg-transparent text-sm text-slate-100 outline-none font-medium">
-                <kbd class="px-2 py-1 bg-obsidian-800 border border-obsidian-700 rounded-lg text-[10px] font-mono text-slate-400">ESC</kbd>
+    <!-- LANDING NAVIGATION -->
+    <nav class="sticky top-0 z-50 glass-card border-b border-obsidian-800 px-8 py-4 flex items-center justify-between">
+        <div class="flex items-center gap-3">
+            <div class="p-2 bg-emerald-500/10 text-emerald-400 rounded-xl border border-emerald-500/20">
+                <i data-lucide="sparkles" class="w-5 h-5"></i>
             </div>
-            <div id="cmd-results" class="p-2 overflow-y-auto divide-y divide-obsidian-800/60 max-h-[60vh]"></div>
+            <span class="font-black text-xl tracking-wide text-white">DSA ENGINE</span>
         </div>
-    </div>
+        <div class="flex items-center gap-4">
+            <button onclick="toggleAuthModal('login')" class="px-4 py-2 text-xs font-bold text-slate-300 hover:text-white transition">Sign In</button>
+            <button onclick="toggleAuthModal('signup')" class="px-5 py-2.5 bg-gradient-to-r from-emerald-500 to-cyan-500 text-black font-extrabold rounded-xl text-xs shadow-lg shadow-emerald-500/20 hover:scale-105 transition">Get Started</button>
+        </div>
+    </nav>
 
-    <!-- AUTH OVERLAY -->
-    <div id="auth-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-obsidian-950/95 backdrop-blur-2xl">
-        <div class="glass-card p-8 rounded-3xl w-full max-w-md shadow-2xl border border-emerald-500/20">
-            <div class="flex items-center gap-3.5 mb-6">
-                <div class="p-3 bg-gradient-to-tr from-emerald-500 via-cyan-500 to-violet-500 rounded-2xl text-black shadow-lg">
-                    <i data-lucide="terminal" class="w-6 h-6"></i>
+    <!-- HERO SECTION -->
+    <main class="max-w-7xl mx-auto px-6 py-16 flex-1 flex flex-col lg:flex-row items-center gap-12 z-10">
+        
+        <!-- LEFT: HERO PROSE -->
+        <div class="flex-1 space-y-6 text-center lg:text-left">
+            <div class="inline-flex items-center gap-2 px-3 py-1.5 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded-full text-xs font-bold font-mono">
+                <i data-lucide="zap" class="w-3.5 h-3.5"></i> Accelerated Tech Interview Prep
+            </div>
+            <h1 class="text-4xl sm:text-6xl font-black text-white leading-tight tracking-tight">
+                Master DSA Patterns. <br/>
+                <span class="bg-gradient-to-r from-emerald-400 via-cyan-400 to-indigo-400 bg-clip-text text-transparent">Crush High-Stakes Coding Interviews.</span>
+            </h1>
+            <p class="text-sm sm:text-base text-slate-400 max-w-xl font-normal leading-relaxed">
+                An executive-grade tracking ecosystem featuring spaced-repetition memory scheduling, live Excel spreadsheet sync, interactive drag-and-drop Kanban, deep telemetry analytics, and AI mock interview simulation.
+            </p>
+            <div class="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start pt-2">
+                <button onclick="toggleAuthModal('signup')" class="px-8 py-3.5 bg-emerald-500 text-black font-extrabold rounded-2xl text-sm shadow-xl shadow-emerald-500/25 hover:bg-emerald-400 transition flex items-center justify-center gap-2">
+                    Launch Platform <i data-lucide="arrow-right" class="w-4 h-4"></i>
+                </button>
+                <a href="#features" class="px-8 py-3.5 bg-obsidian-900 border border-obsidian-800 text-slate-300 font-bold rounded-2xl text-sm hover:text-white transition flex items-center justify-center">
+                    Explore Engine Architecture
+                </a>
+            </div>
+        </div>
+
+        <!-- RIGHT: AUTHENTICATION CARD -->
+        <div class="w-full max-w-md glass-card p-8 rounded-3xl border border-obsidian-800 glow-emerald space-y-6">
+            <div class="flex justify-between items-center border-b border-obsidian-800 pb-4">
+                <button id="tab-login" onclick="switchAuthTab('login')" class="text-sm font-extrabold text-emerald-400 border-b-2 border-emerald-400 pb-1">Sign In</button>
+                <button id="tab-signup" onclick="switchAuthTab('signup')" class="text-sm font-bold text-slate-500 pb-1 hover:text-slate-300">Create Account</button>
+            </div>
+
+            <!-- LOGIN FORM -->
+            <form id="form-login" onsubmit="handleAuth(event, 'login')" class="space-y-4">
+                <div>
+                    <label class="text-[11px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Email Address</label>
+                    <input type="email" id="login-email" required placeholder="engineer@FAANG.com" class="w-full bg-obsidian-950 border border-obsidian-800 text-xs px-4 py-3 rounded-xl text-white outline-none focus:border-emerald-500 font-mono">
                 </div>
                 <div>
-                    <h2 id="auth-title" class="text-xl font-extrabold text-white tracking-wide">DSA MASTERY ENGINE</h2>
-                    <p class="text-xs text-slate-400">Multi-Tier Commercial AI Product</p>
+                    <label class="text-[11px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Password</label>
+                    <input type="password" id="login-password" required placeholder="••••••••" class="w-full bg-obsidian-950 border border-obsidian-800 text-xs px-4 py-3 rounded-xl text-white outline-none focus:border-emerald-500 font-mono">
                 </div>
-            </div>
-
-            <form onsubmit="handleAuth(event)" class="space-y-4">
-                <div id="name-field" class="hidden space-y-1">
-                    <label class="text-[11px] font-bold text-slate-400 uppercase">Full Name</label>
-                    <input type="text" id="auth-name" placeholder="Alex Chen" class="w-full bg-obsidian-900 border border-obsidian-700 rounded-xl px-4 py-2.5 text-sm text-slate-100 outline-none focus:border-emerald-500">
-                </div>
-                <div class="space-y-1">
-                    <label class="text-[11px] font-bold text-slate-400 uppercase">Email Address</label>
-                    <input type="email" id="auth-email" required placeholder="alex@domain.com" class="w-full bg-obsidian-900 border border-obsidian-700 rounded-xl px-4 py-2.5 text-sm text-slate-100 outline-none focus:border-emerald-500">
-                </div>
-                <div class="space-y-1">
-                    <label class="text-[11px] font-bold text-slate-400 uppercase">Password</label>
-                    <input type="password" id="auth-password" required placeholder="••••••••" class="w-full bg-obsidian-900 border border-obsidian-700 rounded-xl px-4 py-2.5 text-sm text-slate-100 outline-none focus:border-emerald-500">
-                </div>
-                <div id="auth-error" class="text-xs text-rose-400 hidden bg-rose-500/10 border border-rose-500/20 p-2.5 rounded-xl"></div>
-                <button type="submit" id="auth-submit-btn" class="w-full bg-gradient-to-r from-emerald-500 to-cyan-500 text-black font-extrabold py-3 rounded-xl text-sm flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/20 hover:opacity-95 transition">
-                    <span>Sign In</span>
-                    <i data-lucide="arrow-right" class="w-4 h-4"></i>
-                </button>
+                <button type="submit" class="w-full py-3 bg-emerald-500 text-black font-extrabold rounded-xl text-xs hover:bg-emerald-400 transition">Enter HQ Dashboard</button>
             </form>
 
-            <div class="mt-5 text-center">
-                <button onclick="toggleAuthMode()" id="auth-toggle-btn" class="text-xs text-emerald-400 hover:text-emerald-300">
-                    Need an account? <span class="underline font-bold">Create Account</span>
-                </button>
-            </div>
-        </div>
-    </div>
-
-    <!-- MAIN HEADER -->
-    <header class="sticky top-0 z-40 glass-card border-b border-obsidian-800 px-6 py-3.5">
-        <div class="max-w-7xl mx-auto flex items-center justify-between">
-            <div class="flex items-center gap-3">
-                <div class="p-2.5 bg-emerald-500/10 text-emerald-400 rounded-2xl border border-emerald-500/20 shadow-[0_0_15px_rgba(16,185,129,0.2)]">
-                    <i data-lucide="sparkles" class="w-5 h-5"></i>
+            <!-- SIGNUP FORM -->
+            <form id="form-signup" onsubmit="handleAuth(event, 'signup')" class="space-y-4 hidden">
+                <div>
+                    <label class="text-[11px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Full Name</label>
+                    <input type="text" id="signup-name" required placeholder="Alex Rivera" class="w-full bg-obsidian-950 border border-obsidian-800 text-xs px-4 py-3 rounded-xl text-white outline-none focus:border-emerald-500">
                 </div>
                 <div>
-                    <div class="flex items-center gap-2">
-                        <h1 class="font-black text-lg tracking-wide text-white">DSA ENGINE</h1>
-                        <span class="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">v3.0 PRO</span>
-                        
-                        <!-- STREAK BADGE -->
-                        <div class="hidden sm:flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-gradient-to-r from-amber-500/15 to-orange-500/15 text-amber-300 border border-amber-500/30 text-[11px] font-bold">
-                            <i data-lucide="flame" class="w-3.5 h-3.5 text-amber-400 fill-amber-400"></i>
-                            <span id="header-streak-count">0</span>
-                            <span>Day Streak</span>
-                        </div>
-                    </div>
-                    <p class="text-xs text-slate-400 flex items-center gap-1.5 mt-0.5">
-                        <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-                        User: <span id="user-display" class="text-emerald-300 font-bold">User</span>
-                    </p>
+                    <label class="text-[11px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Email Address</label>
+                    <input type="email" id="signup-email" required placeholder="engineer@FAANG.com" class="w-full bg-obsidian-950 border border-obsidian-800 text-xs px-4 py-3 rounded-xl text-white outline-none focus:border-emerald-500 font-mono">
                 </div>
-            </div>
+                <div>
+                    <label class="text-[11px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Password</label>
+                    <input type="password" id="signup-password" required placeholder="••••••••" class="w-full bg-obsidian-950 border border-obsidian-800 text-xs px-4 py-3 rounded-xl text-white outline-none focus:border-emerald-500 font-mono">
+                </div>
+                <button type="submit" class="w-full py-3 bg-gradient-to-r from-emerald-500 to-cyan-500 text-black font-extrabold rounded-xl text-xs hover:opacity-90 transition">Initialize Account</button>
+            </form>
 
-            <!-- ROADMAP TIER SWITCHER BAR -->
-            <div id="roadmap-tier-selector" class="hidden md:flex items-center gap-1.5 p-1 bg-obsidian-950/90 rounded-2xl border border-obsidian-800"></div>
-
-            <div class="flex items-center gap-3">
-                <button onclick="toggleCommandPalette()" class="hidden sm:flex items-center gap-2 px-3 py-1.5 bg-obsidian-900 hover:bg-obsidian-800 text-slate-400 rounded-xl border border-obsidian-800 text-xs transition">
-                    <i data-lucide="search" class="w-3.5 h-3.5"></i>
-                    <span>Search</span>
-                    <kbd class="px-1.5 py-0.5 bg-obsidian-950 rounded border border-obsidian-700 text-[10px] font-mono text-slate-500">⌘K</kbd>
-                </button>
-                <button onclick="logout()" class="px-3.5 py-2 text-xs font-bold bg-obsidian-900 hover:bg-obsidian-800 text-slate-300 rounded-xl border border-obsidian-800 flex items-center gap-2 transition">
-                    <i data-lucide="log-out" class="w-3.5 h-3.5 text-slate-400"></i> Logout
-                </button>
-            </div>
+            <div id="auth-error" class="text-[11px] font-mono text-red-400 text-center min-h-[16px]"></div>
         </div>
-    </header>
-
-    <!-- MOBILE ROADMAP SELECTOR -->
-    <div class="md:hidden px-6 mt-4">
-        <div id="roadmap-tier-selector-mobile" class="flex items-center gap-1.5 p-1 bg-obsidian-950/90 rounded-2xl border border-obsidian-800 overflow-x-auto"></div>
-    </div>
-
-    <!-- MAIN DASHBOARD CONTENT -->
-    <main class="max-w-7xl mx-auto px-6 mt-6 flex-1 w-full space-y-8">
-
-        <!-- BETA / LOCKED TIER PLACEHOLDER CONTAINER -->
-        <div id="beta-locked-container" class="hidden glass-card p-10 rounded-3xl border border-violet-500/30 text-center relative overflow-hidden my-10 space-y-6">
-            <div class="absolute inset-0 bg-gradient-to-b from-violet-500/10 via-transparent to-transparent opacity-50"></div>
-            <div class="w-20 h-20 mx-auto rounded-3xl bg-violet-500/20 text-violet-400 flex items-center justify-center border border-violet-500/40 shadow-[0_0_30px_rgba(139,92,246,0.3)]">
-                <i data-lucide="lock" class="w-10 h-10"></i>
-            </div>
-            <div class="max-w-md mx-auto space-y-2 relative z-10">
-                <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-violet-500/20 text-violet-300 border border-violet-500/40 text-xs font-mono font-bold uppercase tracking-wider mb-2">
-                    <i data-lucide="sparkles" class="w-3.5 h-3.5"></i> Beta / Coming Soon
-                </div>
-                <h3 id="locked-tier-title" class="text-2xl font-black text-white">Tier Curriculum Locked</h3>
-                <p id="locked-tier-desc" class="text-xs text-slate-400 leading-relaxed">Drop your workbook file into the project directory to auto-unlock this roadmap tier.</p>
-            </div>
-            <div class="inline-block bg-obsidian-950 p-4 rounded-2xl border border-obsidian-800 text-left font-mono text-xs text-slate-300 space-y-1">
-                <p class="text-slate-500 text-[10px] uppercase font-bold">Auto-Ingest Instructions:</p>
-                <p>1. Name file: <span id="locked-filename" class="text-emerald-400 font-bold">Roadmap_Intermediate.xlsx</span></p>
-                <p>2. Run: <span class="text-cyan-400">npm run seed</span></p>
-            </div>
-        </div>
-
-        <!-- UNLOCKED MAIN DASHBOARD VIEW -->
-        <div id="unlocked-dashboard-view" class="space-y-8">
-
-            <!-- SECTION 0: AI COACH COMMAND HUB -->
-            <section id="sec-coach" class="glass-card glass-card-glow rounded-3xl p-6 border border-emerald-500/30 bg-gradient-to-r from-emerald-950/20 via-obsidian-900 to-obsidian-900 space-y-6">
-                <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-obsidian-800 pb-4">
-                    <div class="flex items-center gap-3">
-                        <div class="p-3 bg-emerald-500/20 text-emerald-400 rounded-2xl border border-emerald-500/30 shadow-[0_0_20px_rgba(16,185,129,0.2)]">
-                            <i data-lucide="bot" class="w-6 h-6"></i>
-                        </div>
-                        <div>
-                            <div class="flex items-center gap-2">
-                                <h2 class="text-lg font-black text-white tracking-wide">AI Performance Mentor</h2>
-                                <span id="coach-track-badge" class="text-[10px] font-mono px-2.5 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 font-bold">Evaluating...</span>
-                            </div>
-                            <p class="text-xs text-slate-400 mt-0.5">Automated difficulty adaptation & spaced-repetition scheduler</p>
-                        </div>
-                    </div>
-
-                    <div class="flex items-center gap-3">
-                        <button onclick="triggerCoachEmail()" class="px-4 py-2 text-xs font-bold bg-gradient-to-r from-emerald-500 to-cyan-500 text-black rounded-xl shadow-lg shadow-emerald-500/20 hover:opacity-95 transition flex items-center gap-2">
-                            <i data-lucide="mail" class="w-4 h-4"></i> Send Strategy Plan
-                        </button>
-                    </div>
-                </div>
-
-                <!-- AI Insight & Action Grid -->
-                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    <div class="glass-card p-5 rounded-2xl bg-obsidian-950/80 border border-obsidian-800 space-y-3 lg:col-span-2">
-                        <p class="text-[10px] font-bold uppercase tracking-wider text-emerald-400 flex items-center gap-1.5">
-                            <i data-lucide="zap" class="w-3.5 h-3.5"></i> Active Strategy Directive
-                        </p>
-                        <p id="coach-directive" class="text-xs text-slate-200 leading-relaxed font-medium">Analyzing tier progress history...</p>
-                        <p id="coach-reason" class="text-[11px] text-slate-400 italic bg-obsidian-900 p-2.5 rounded-xl border border-obsidian-800"></p>
-                    </div>
-
-                    <div class="glass-card p-5 rounded-2xl bg-obsidian-950/80 border border-obsidian-800 flex flex-col justify-between space-y-3">
-                        <p class="text-[10px] font-bold uppercase tracking-wider text-cyan-400 flex items-center gap-1.5">
-                            <i data-lucide="message-square" class="w-3.5 h-3.5"></i> Ask Mentor
-                        </p>
-                        <div class="flex gap-2">
-                            <input type="text" id="ai-question" placeholder="e.g. Approach for 2-pointer edge cases?" class="bg-obsidian-900 border border-obsidian-800 text-xs text-slate-200 rounded-xl px-3 py-2 outline-none w-full focus:border-cyan-500">
-                            <button onclick="askAiCoach()" class="px-3 py-2 bg-cyan-500 text-black font-bold text-xs rounded-xl hover:bg-cyan-400 shrink-0 transition">Ask</button>
-                        </div>
-                        <p id="ai-answer" class="text-[11px] text-slate-300 hidden bg-obsidian-900 p-2.5 rounded-xl border border-obsidian-800 max-h-24 overflow-y-auto"></p>
-                    </div>
-                </div>
-            </section>
-
-            <!-- SECTION 1: TOP METRICS OVERVIEW -->
-            <section id="sec-metrics" class="space-y-4">
-                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-                    <div class="glass-card p-6 rounded-3xl relative overflow-hidden glass-card-hover">
-                        <div class="flex justify-between items-start">
-                            <div>
-                                <p class="text-xs font-bold uppercase tracking-wider text-slate-400">Tier Problems</p>
-                                <span id="stat-total" class="text-4xl font-black text-white font-mono mt-3 block">0</span>
-                            </div>
-                            <div class="p-3 bg-slate-800 text-slate-300 rounded-2xl border border-slate-700/50">
-                                <i data-lucide="layers" class="w-6 h-6"></i>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="glass-card p-6 rounded-3xl relative overflow-hidden glass-card-hover">
-                        <div class="flex justify-between items-start">
-                            <div>
-                                <p class="text-xs font-bold uppercase tracking-wider text-emerald-400">Completed</p>
-                                <span id="stat-solved" class="text-4xl font-black text-emerald-400 font-mono mt-3 block">0</span>
-                            </div>
-                            <div class="p-3 bg-emerald-500/10 text-emerald-400 rounded-2xl border border-emerald-500/20">
-                                <i data-lucide="check-circle-2" class="w-6 h-6"></i>
-                            </div>
-                        </div>
-                        <div class="flex items-center gap-2 mt-4">
-                            <div class="flex-1 bg-obsidian-900 h-2 rounded-full overflow-hidden border border-obsidian-800">
-                                <div id="stat-solved-bar" class="bg-gradient-to-r from-emerald-500 to-cyan-400 h-full rounded-full transition-all duration-700" style="width: 0%"></div>
-                            </div>
-                            <span id="stat-rate" class="text-xs font-bold text-emerald-400 font-mono">0%</span>
-                        </div>
-                    </div>
-
-                    <div class="glass-card p-6 rounded-3xl relative overflow-hidden glass-card-hover">
-                        <div class="flex justify-between items-start">
-                            <div>
-                                <p class="text-xs font-bold uppercase tracking-wider text-indigo-400">Mastered</p>
-                                <span id="stat-mastered" class="text-4xl font-black text-indigo-400 font-mono mt-3 block">0</span>
-                            </div>
-                            <div class="p-3 bg-indigo-500/10 text-indigo-400 rounded-2xl border border-indigo-500/20">
-                                <i data-lucide="award" class="w-6 h-6"></i>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="glass-card p-6 rounded-3xl relative overflow-hidden glass-card-hover">
-                        <div class="flex justify-between items-start">
-                            <div>
-                                <p class="text-xs font-bold uppercase tracking-wider text-amber-400">Due Revisions</p>
-                                <span id="stat-due" class="text-4xl font-black text-amber-400 font-mono mt-3 block">0</span>
-                            </div>
-                            <div class="p-3 bg-amber-500/10 text-amber-400 rounded-2xl border border-amber-500/20">
-                                <i data-lucide="clock" class="w-6 h-6"></i>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-            <!-- SECTION 2: CHARTS & ANALYTICS -->
-            <section id="sec-analytics" class="glass-card rounded-3xl p-6 space-y-6">
-                <div class="flex items-center justify-between cursor-pointer border-b border-obsidian-800 pb-4" onclick="toggleSection('body-analytics', 'icon-analytics')">
-                    <div class="flex items-center gap-3">
-                        <div class="p-2 bg-emerald-500/10 text-emerald-400 rounded-xl">
-                            <i data-lucide="pie-chart" class="w-5 h-5"></i>
-                        </div>
-                        <div>
-                            <h2 class="text-base font-extrabold text-white tracking-wide">Completion & Topic Analytics</h2>
-                            <p class="text-xs text-slate-400">Interactive Chart.js visualizations</p>
-                        </div>
-                    </div>
-                    <button class="p-2 text-slate-400 hover:text-white rounded-xl bg-obsidian-900 border border-obsidian-800">
-                        <i data-lucide="chevron-down" id="icon-analytics" class="w-4 h-4 transition-transform"></i>
-                    </button>
-                </div>
-
-                <div id="body-analytics" class="grid grid-cols-1 lg:grid-cols-3 gap-6 pt-2">
-                    <div class="glass-card p-6 rounded-2xl flex flex-col items-center justify-center relative">
-                        <h3 class="text-xs font-bold text-slate-300 tracking-wider uppercase mb-4 w-full text-left">Status Ratio</h3>
-                        <div class="relative w-56 h-56 flex items-center justify-center">
-                            <canvas id="doughnutChart"></canvas>
-                        </div>
-                    </div>
-
-                    <div class="glass-card p-6 rounded-2xl lg:col-span-2 flex flex-col justify-between">
-                        <h3 class="text-xs font-bold text-slate-300 tracking-wider uppercase mb-4">Topic Progress Distribution</h3>
-                        <div class="w-full h-64">
-                            <canvas id="topicBarChart"></canvas>
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-            <!-- SECTION 3: KANBAN BOARD -->
-            <section id="sec-kanban" class="glass-card rounded-3xl p-6 space-y-6">
-                <div class="flex items-center justify-between cursor-pointer border-b border-obsidian-800 pb-4" onclick="toggleSection('body-kanban', 'icon-kanban')">
-                    <div class="flex items-center gap-3">
-                        <div class="p-2 bg-cyan-500/10 text-cyan-400 rounded-xl">
-                            <i data-lucide="kanban" class="w-5 h-5"></i>
-                        </div>
-                        <div>
-                            <h2 class="text-base font-extrabold text-white tracking-wide">Interactive Drag & Drop Board</h2>
-                            <p class="text-xs text-slate-400">Drag cards between columns to update status & trigger celebrations</p>
-                        </div>
-                    </div>
-                    <button class="p-2 text-slate-400 hover:text-white rounded-xl bg-obsidian-900 border border-obsidian-800">
-                        <i data-lucide="chevron-down" id="icon-kanban" class="w-4 h-4 transition-transform"></i>
-                    </button>
-                </div>
-
-                <div id="body-kanban" class="grid grid-cols-1 md:grid-cols-4 gap-5 pt-2">
-                    <div class="kanban-column rounded-2xl p-4 flex flex-col space-y-3" ondragover="allowDrop(event)" ondrop="handleDrop(event, 'Todo')">
-                        <div class="flex justify-between items-center pb-2 border-b border-obsidian-800">
-                            <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Todo</span>
-                            <span id="kanban-count-todo" class="text-xs font-mono font-bold px-2 py-0.5 rounded-full bg-obsidian-900 text-slate-400">0</span>
-                        </div>
-                        <div id="kanban-list-todo" class="space-y-3 flex-1 overflow-y-auto max-h-[600px] pr-1"></div>
-                    </div>
-
-                    <div class="kanban-column rounded-2xl p-4 flex flex-col space-y-3" ondragover="allowDrop(event)" ondrop="handleDrop(event, 'Hint-solved')">
-                        <div class="flex justify-between items-center pb-2 border-b border-obsidian-800">
-                            <span class="text-xs font-bold uppercase tracking-wider text-amber-400">Hint-Solved</span>
-                            <span id="kanban-count-hint" class="text-xs font-mono font-bold px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300">0</span>
-                        </div>
-                        <div id="kanban-list-hint" class="space-y-3 flex-1 overflow-y-auto max-h-[600px] pr-1"></div>
-                    </div>
-
-                    <div class="kanban-column rounded-2xl p-4 flex flex-col space-y-3" ondragover="allowDrop(event)" ondrop="handleDrop(event, 'Solved')">
-                        <div class="flex justify-between items-center pb-2 border-b border-obsidian-800">
-                            <span class="text-xs font-bold uppercase tracking-wider text-emerald-400">Solved</span>
-                            <span id="kanban-count-solved" class="text-xs font-mono font-bold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300">0</span>
-                        </div>
-                        <div id="kanban-list-solved" class="space-y-3 flex-1 overflow-y-auto max-h-[600px] pr-1"></div>
-                    </div>
-
-                    <div class="kanban-column rounded-2xl p-4 flex flex-col space-y-3" ondragover="allowDrop(event)" ondrop="handleDrop(event, 'Mastered')">
-                        <div class="flex justify-between items-center pb-2 border-b border-obsidian-800">
-                            <span class="text-xs font-bold uppercase tracking-wider text-indigo-400">Mastered</span>
-                            <span id="kanban-count-mastered" class="text-xs font-mono font-bold px-2 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300">0</span>
-                        </div>
-                        <div id="kanban-list-mastered" class="space-y-3 flex-1 overflow-y-auto max-h-[600px] pr-1"></div>
-                    </div>
-                </div>
-            </section>
-
-            <!-- SECTION 4: MASTER PROBLEM LIST -->
-            <section id="sec-table" class="glass-card rounded-3xl p-6 space-y-6">
-                <div class="flex items-center justify-between cursor-pointer border-b border-obsidian-800 pb-4" onclick="toggleSection('body-table', 'icon-table')">
-                    <div class="flex items-center gap-3">
-                        <div class="p-2 bg-indigo-500/10 text-indigo-400 rounded-xl">
-                            <i data-lucide="list-checks" class="w-5 h-5"></i>
-                        </div>
-                        <div>
-                            <h2 class="text-base font-extrabold text-white tracking-wide">Master Problem List</h2>
-                            <p class="text-xs text-slate-400">Click problem to open LeetCode, or click row to expand stopwatch & key logic notes</p>
-                        </div>
-                    </div>
-                    <button class="p-2 text-slate-400 hover:text-white rounded-xl bg-obsidian-900 border border-obsidian-800">
-                        <i data-lucide="chevron-down" id="icon-table" class="w-4 h-4 transition-transform"></i>
-                    </button>
-                </div>
-
-                <div id="body-table" class="space-y-4 pt-2">
-                    <div class="space-y-3 bg-obsidian-900/80 p-4 rounded-2xl border border-obsidian-800">
-                        <div class="flex flex-wrap gap-4 items-center justify-between">
-                            <div class="flex items-center gap-3 bg-obsidian-950 border border-obsidian-800 rounded-xl px-4 py-2 flex-1 min-w-[260px] focus-within:border-emerald-500/50 transition">
-                                <i data-lucide="search" class="w-4 h-4 text-slate-500"></i>
-                                <input type="text" id="search-input" oninput="renderTable()" placeholder="Search problem, topic, or logic notes..." class="bg-transparent text-xs text-slate-100 outline-none w-full">
-                            </div>
-                            <div class="flex items-center gap-2">
-                                <span class="text-[11px] font-bold text-slate-400 uppercase">Topic:</span>
-                                <select id="filter-topic" onchange="renderTable()" class="bg-obsidian-950 border border-obsidian-800 text-xs rounded-xl px-3 py-2 text-slate-300 outline-none focus:border-emerald-500/50"></select>
-                            </div>
-                        </div>
-
-                        <!-- Filter Chips -->
-                        <div class="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-obsidian-800/60">
-                            <div class="flex items-center gap-1.5 overflow-x-auto">
-                                <span class="text-[11px] font-bold text-slate-400 uppercase mr-1">Difficulty:</span>
-                                <button onclick="setFilterChip('diff', 'ALL')" id="chip-diff-ALL" class="px-3 py-1 rounded-xl text-xs font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 transition">All</button>
-                                <button onclick="setFilterChip('diff', 'Easy')" id="chip-diff-Easy" class="px-3 py-1 rounded-xl text-xs font-bold bg-obsidian-950 text-slate-400 border border-obsidian-800 hover:text-white transition">Easy</button>
-                                <button onclick="setFilterChip('diff', 'Medium')" id="chip-diff-Medium" class="px-3 py-1 rounded-xl text-xs font-bold bg-obsidian-950 text-slate-400 border border-obsidian-800 hover:text-white transition">Medium</button>
-                                <button onclick="setFilterChip('diff', 'Hard')" id="chip-diff-Hard" class="px-3 py-1 rounded-xl text-xs font-bold bg-obsidian-950 text-slate-400 border border-obsidian-800 hover:text-white transition">Hard</button>
-                            </div>
-
-                            <div class="flex items-center gap-1.5 overflow-x-auto">
-                                <span class="text-[11px] font-bold text-slate-400 uppercase mr-1">Status:</span>
-                                <button onclick="setFilterChip('status', 'ALL')" id="chip-status-ALL" class="px-3 py-1 rounded-xl text-xs font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 transition">All</button>
-                                <button onclick="setFilterChip('status', 'Todo')" id="chip-status-Todo" class="px-3 py-1 rounded-xl text-xs font-bold bg-obsidian-950 text-slate-400 border border-obsidian-800 hover:text-white transition">Todo</button>
-                                <button onclick="setFilterChip('status', 'Hint-solved')" id="chip-status-Hint-solved" class="px-3 py-1 rounded-xl text-xs font-bold bg-obsidian-950 text-slate-400 border border-obsidian-800 hover:text-white transition">Hint-Solved</button>
-                                <button onclick="setFilterChip('status', 'Solved')" id="chip-status-Solved" class="px-3 py-1 rounded-xl text-xs font-bold bg-obsidian-950 text-slate-400 border border-obsidian-800 hover:text-white transition">Solved</button>
-                                <button onclick="setFilterChip('status', 'Mastered')" id="chip-status-Mastered" class="px-3 py-1 rounded-xl text-xs font-bold bg-obsidian-950 text-slate-400 border border-obsidian-800 hover:text-white transition">Mastered</button>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="rounded-2xl overflow-hidden border border-obsidian-800">
-                        <div class="overflow-x-auto">
-                            <table class="w-full text-left text-xs">
-                                <thead class="bg-obsidian-900 text-slate-400 uppercase font-bold border-b border-obsidian-800">
-                                    <tr>
-                                        <th class="p-4 w-10 text-center font-mono">#</th>
-                                        <th class="p-4">Problem Name</th>
-                                        <th class="p-4">Topic</th>
-                                        <th class="p-4">Difficulty</th>
-                                        <th class="p-4">Priority</th>
-                                        <th class="p-4">Status</th>
-                                        <th class="p-4 text-center">Time (m)</th>
-                                        <th class="p-4 text-center">Revisions</th>
-                                        <th class="p-4">Next Due</th>
-                                        <th class="p-4 text-center">Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="table-body" class="divide-y divide-obsidian-800/80 font-medium"></tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-        </div>
-
     </main>
 
+    <!-- FEATURE HIGHLIGHT MATRIX -->
+    <section id="features" class="max-w-7xl mx-auto px-6 py-12 w-full grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div class="glass-card p-6 rounded-3xl space-y-3">
+            <div class="p-3 bg-emerald-500/10 text-emerald-400 rounded-2xl w-fit"><i data-lucide="repeat" class="w-5 h-5"></i></div>
+            <h3 class="text-sm font-extrabold text-white">Spaced Repetition Engine</h3>
+            <p class="text-xs text-slate-400 leading-relaxed">Automated calculation of review dates (1, 3, 7, 21, 60 days) ensuring zero decay in problem-solving retention.</p>
+        </div>
+        <div class="glass-card p-6 rounded-3xl space-y-3">
+            <div class="p-3 bg-cyan-500/10 text-cyan-400 rounded-2xl w-fit"><i data-lucide="file-spreadsheet" class="w-5 h-5"></i></div>
+            <h3 class="text-sm font-extrabold text-white">Dynamic Excel Auto-Ingest</h3>
+            <p class="text-xs text-slate-400 leading-relaxed">Seamlessly sync <code class="text-emerald-400 font-mono">DSA_Mastery_Tracker.xlsx</code> to unlock new roadmap tiers and clear Beta constraints instantly.</p>
+        </div>
+        <div class="glass-card p-6 rounded-3xl space-y-3">
+            <div class="p-3 bg-indigo-500/10 text-indigo-400 rounded-2xl w-fit"><i data-lucide="bot" class="w-5 h-5"></i></div>
+            <h3 class="text-sm font-extrabold text-white">AI Mock Interview Studio</h3>
+            <p class="text-xs text-slate-400 leading-relaxed">Powered by Gemini AI failover models to generate realistic technical interview constraints and edge-case testing environments.</p>
+        </div>
+    </section>
+
+    <!-- FOOTER -->
+    <footer class="border-t border-obsidian-800 py-6 text-center text-xs text-slate-500">
+        DSA Mastery Engine &copy; 2026. All rights reserved. Built for FAANG & Tier-1 Engineering Prep.
+    </footer>
+
     <script>
-        let isSignup = false;
-        let jwtToken = localStorage.getItem('dsa_jwt');
-        let currentTier = 'Beginner';
-        let roadmapsMeta = [];
-        let problemsData = [];
-        let doughnutChartInstance = null;
-        let topicChartInstance = null;
-        const expandedRowIds = new Set();
-        const activeTimers = {};
-        const SPACING = [1, 3, 7, 21, 60];
-
-        let selectedDiffChip = 'ALL';
-        let selectedStatusChip = 'ALL';
-
-        // BACKGROUND CANVASES / SCANLINES
-        function initCyberCanvas() {
-            const canvas = document.getElementById('cyber-canvas');
-            const ctx = canvas.getContext('2d');
-            let width = canvas.width = window.innerWidth;
-            let height = canvas.height = window.innerHeight;
-
-            window.addEventListener('resize', () => {
-                width = canvas.width = window.innerWidth;
-                height = canvas.height = window.innerHeight;
-            });
-
-            const particles = Array.from({ length: 45 }, () => ({
-                x: Math.random() * width,
-                y: Math.random() * height,
-                vx: (Math.random() - 0.5) * 0.4,
-                vy: (Math.random() - 0.5) * 0.4,
-                radius: Math.random() * 1.5 + 1
-            }));
-
-            function animate() {
-                ctx.clearRect(0, 0, width, height);
-                ctx.fillStyle = 'rgba(16, 185, 129, 0.18)';
-                ctx.strokeStyle = 'rgba(16, 185, 129, 0.05)';
-
-                for (let i = 0; i < particles.length; i++) {
-                    let p = particles[i];
-                    p.x += p.vx;
-                    p.y += p.vy;
-
-                    if (p.x < 0 || p.x > width) p.vx *= -1;
-                    if (p.y < 0 || p.y > height) p.vy *= -1;
-
-                    ctx.beginPath();
-                    ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
-                    ctx.fill();
-
-                    for (let j = i + 1; j < particles.length; j++) {
-                        let p2 = particles[j];
-                        let dist = Math.hypot(p.x - p2.x, p.y - p2.y);
-                        if (dist < 130) {
-                            ctx.beginPath();
-                            ctx.moveTo(p.x, p.y);
-                            ctx.lineTo(p2.x, p2.y);
-                            ctx.stroke();
-                        }
-                    }
-                }
-                requestAnimationFrame(animate);
-            }
-            animate();
+        // Check existing session token
+        if (localStorage.getItem('dsa_jwt')) {
+            window.location.href = '/dashboard';
         }
 
-        function showToast(message, type = 'success') {
-            const container = document.getElementById('toast-container');
-            const toast = document.createElement('div');
-            const isSuccess = type === 'success';
+        function switchAuthTab(tab) {
+            const isLogin = tab === 'login';
+            document.getElementById('form-login').classList.toggle('hidden', !isLogin);
+            document.getElementById('form-signup').classList.toggle('hidden', isLogin);
+
+            document.getElementById('tab-login').className = isLogin 
+                ? 'text-sm font-extrabold text-emerald-400 border-b-2 border-emerald-400 pb-1' 
+                : 'text-sm font-bold text-slate-500 pb-1 hover:text-slate-300';
             
-            toast.className = `glass-card px-4 py-3 rounded-2xl text-xs font-semibold flex items-center gap-2.5 border transition-all duration-300 transform translate-y-4 opacity-0 pointer-events-auto ${
-                isSuccess ? 'border-emerald-500/40 text-emerald-300 shadow-[0_0_20px_rgba(16,185,129,0.2)]' : 'border-rose-500/40 text-rose-300 shadow-[0_0_20px_rgba(244,63,94,0.2)]'
-            }`;
-            toast.innerHTML = `<i data-lucide="${isSuccess ? 'check-circle-2' : 'alert-circle'}" class="w-4 h-4"></i><span>${message}</span>`;
-            container.appendChild(toast);
-            lucide.createIcons();
-
-            setTimeout(() => toast.classList.remove('translate-y-4', 'opacity-0'), 10);
-            setTimeout(() => {
-                toast.classList.add('opacity-0', 'translate-y-2');
-                setTimeout(() => toast.remove(), 300);
-            }, 3200);
+            document.getElementById('tab-signup').className = !isLogin 
+                ? 'text-sm font-extrabold text-emerald-400 border-b-2 border-emerald-400 pb-1' 
+                : 'text-sm font-bold text-slate-500 pb-1 hover:text-slate-300';
+            
+            document.getElementById('auth-error').innerText = '';
         }
 
-        function apiFetch(endpoint, options = {}) {
-            options.headers = { ...options.headers, 'Content-Type': 'application/json', 'Authorization': `Bearer ${jwtToken}` };
-            return fetch(endpoint, options).then(res => {
-                if (res.status === 401 || res.status === 403) { logout(); throw new Error('Unauthorized'); }
-                return res.json();
-            });
+        function toggleAuthModal(tab) {
+            switchAuthTab(tab);
+            window.scrollTo({ top: 0, behavior: 'smooth' });
         }
 
-        function toggleAuthMode() {
-            isSignup = !isSignup;
-            document.getElementById('auth-title').innerText = isSignup ? 'Create Account' : 'DSA MASTERY ENGINE';
-            document.getElementById('name-field').classList.toggle('hidden', !isSignup);
-        }
-
-        function handleAuth(e) {
+        async function handleAuth(e, type) {
             e.preventDefault();
-            const endpoint = isSignup ? '/api/auth/signup' : '/api/auth/login';
-            const body = {
-                email: document.getElementById('auth-email').value,
-                password: document.getElementById('auth-password').value,
-                ...(isSignup && { name: document.getElementById('auth-name').value })
-            };
+            const errDiv = document.getElementById('auth-error');
+            errDiv.innerText = '';
 
-            fetch(endpoint, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
-                .then(res => res.json())
-                .then(data => {
-                    if (data.error) {
-                        document.getElementById('auth-error').innerText = data.error;
-                        document.getElementById('auth-error').classList.remove('hidden');
-                    } else {
-                        jwtToken = data.token;
-                        localStorage.setItem('dsa_jwt', jwtToken);
-                        localStorage.setItem('dsa_user', data.user.name);
-                        showToast(`Welcome back, ${data.user.name}!`);
-                        initApp();
-                    }
+            const endpoint = type === 'login' ? '/api/auth/login' : '/api/auth/signup';
+            const body = type === 'login' 
+                ? { email: document.getElementById('login-email').value, password: document.getElementById('login-password').value }
+                : { name: document.getElementById('signup-name').value, email: document.getElementById('signup-email').value, password: document.getElementById('signup-password').value };
+
+            try {
+                const res = await fetch(endpoint, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(body)
                 });
-        }
+                const data = await res.json();
 
-        function logout() { localStorage.removeItem('dsa_jwt'); localStorage.removeItem('dsa_user'); location.reload(); }
+                if (!res.ok) throw new Error(data.error || 'Authentication failed');
 
-        function initApp() {
-            if (!jwtToken) return;
-            apiFetch('/api/auth/me').then(data => {
-                if (data.user) {
-                    document.getElementById('user-display').innerText = data.user.name;
-                    localStorage.setItem('dsa_user', data.user.name);
-                }
-                document.getElementById('auth-modal').classList.add('hidden');
-                loadRoadmapsMeta();
-            });
-        }
-
-        function loadRoadmapsMeta() {
-            apiFetch('/api/roadmaps/meta').then(meta => {
-                roadmapsMeta = meta;
-                renderRoadmapTierSelectors();
-                
-                const currentMeta = meta.find(m => m.tier === currentTier);
-                if (currentMeta && !currentMeta.isUnlocked) {
-                    showLockedTierView(currentMeta);
-                } else {
-                    showUnlockedDashboardView();
-                    loadTierData();
-                }
-            });
-        }
-
-        function renderRoadmapTierSelectors() {
-            const html = roadmapsMeta.map(m => {
-                const isActive = m.tier === currentTier;
-                const isLocked = !m.isUnlocked;
-                return `
-                    <button onclick="switchTier('${m.tier}')" class="px-3.5 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-2 ${
-                        isActive ? 'bg-gradient-to-r from-emerald-500 to-cyan-500 text-black shadow-md shadow-emerald-500/20' : 'text-slate-400 hover:text-white hover:bg-obsidian-900'
-                    }">
-                        <span>${m.tier}</span>
-                        ${isLocked ? `<span class="px-1.5 py-0.2 rounded bg-violet-500/20 text-violet-300 text-[9px] border border-violet-500/30">BETA</span>` : `<span class="font-mono text-[10px] opacity-80">(${m.solvedProblems}/${m.totalProblems})</span>`}
-                    </button>
-                `;
-            }).join('');
-
-            document.getElementById('roadmap-tier-selector').innerHTML = html;
-            document.getElementById('roadmap-tier-selector-mobile').innerHTML = html;
-        }
-
-        function switchTier(tier) {
-            currentTier = tier;
-            renderRoadmapTierSelectors();
-            const meta = roadmapsMeta.find(m => m.tier === tier);
-            if (meta && !meta.isUnlocked) {
-                showLockedTierView(meta);
-            } else {
-                showUnlockedDashboardView();
-                loadTierData();
+                localStorage.setItem('dsa_jwt', data.token);
+                window.location.href = '/dashboard';
+            } catch (err) {
+                errDiv.innerText = err.message;
             }
         }
 
-        function showLockedTierView(meta) {
-            document.getElementById('unlocked-dashboard-view').classList.add('hidden');
-            const container = document.getElementById('beta-locked-container');
-            container.classList.remove('hidden');
-            document.getElementById('locked-tier-title').innerText = `${meta.tier} Tier Locked`;
-            document.getElementById('locked-tier-desc').innerText = `Drop ${meta.expectedFileName} into your root project directory to unlock the complete curriculum.`;
-            document.getElementById('locked-filename').innerText = meta.expectedFileName;
-            lucide.createIcons();
-        }
-
-        function showUnlockedDashboardView() {
-            document.getElementById('beta-locked-container').classList.add('hidden');
-            document.getElementById('unlocked-dashboard-view').classList.remove('hidden');
-        }
-
-        function loadTierData() {
-            apiFetch(`/api/problems?tier=${currentTier}`).then(data => {
-                problemsData = data;
-                populateTopicsFilter();
-                renderTable();
-                renderKanban();
-                renderCharts();
-                updateTopMetrics();
-            });
-            loadCoachInsights();
-        }
-
-        function loadCoachInsights() {
-            apiFetch(`/api/coach/insights?tier=${currentTier}`).then(data => {
-                document.getElementById('coach-track-badge').innerText = data.summary.trackStatus;
-                document.getElementById('coach-directive').innerText = data.aiFeedback;
-                document.getElementById('coach-reason').innerText = `Diagnosis: ${data.summary.adaptationReason}`;
-                if (data.summary.streak !== undefined) {
-                    document.getElementById('header-streak-count').innerText = data.summary.streak;
-                }
-            });
-        }
-
-        function askAiCoach() {
-            const qInput = document.getElementById('ai-question');
-            const q = qInput.value.trim();
-            if (!q) return;
-            
-            const ansBox = document.getElementById('ai-answer');
-            ansBox.classList.remove('hidden');
-            ansBox.innerText = "Mentor thinking...";
-
-            apiFetch('/api/coach/ask', { method: 'POST', body: JSON.stringify({ question: q, tier: currentTier }) })
-                .then(res => {
-                    if (res && res.answer) {
-                        ansBox.innerText = res.answer;
-                    } else if (res && res.error) {
-                        ansBox.innerText = "⚠️ Error: " + res.error;
-                    }
-                });
-        }
-
-        function triggerCoachEmail() {
-            apiFetch('/api/coach/send-email', { method: 'POST', body: JSON.stringify({ tier: currentTier }) }).then(res => {
-                showToast(res.message, res.success ? 'success' : 'error');
-            });
-        }
-
-        function triggerCelebration() {
-            confetti({ particleCount: 120, spread: 80, origin: { y: 0.6 }, colors: ['#10b981', '#06b6d4', '#8b5cf6', '#ec4899'] });
-        }
-
-        function updateProgress(problemId, key, value) {
-            const prob = problemsData.find(p => p.id === problemId);
-            if (!prob) return;
-            const oldStatus = prob.status;
-            prob[key] = value;
-
-            if (key === 'status') {
-                if ((value === 'Solved' || value === 'Mastered') && oldStatus !== value) triggerCelebration();
-                if ((value === 'Solved' || value === 'Mastered') && !prob.solved_date) prob.solved_date = new Date().toISOString().split('T')[0];
-            }
-
-            apiFetch(`/api/progress/${problemId}`, { method: 'PUT', body: JSON.stringify(prob) }).then(() => {
-                showToast(`Updated "${prob.name}"`);
-                renderTable();
-                renderKanban();
-                renderCharts();
-                updateTopMetrics();
-                loadCoachInsights();
-                loadRoadmapsMeta();
-            });
-        }
-
-        function saveNotes(problemId, event) {
-            if (event) event.stopPropagation();
-            const textarea = document.getElementById(`note-input-${problemId}`);
-            const statusLabel = document.getElementById(`note-status-${problemId}`);
-            const btn = document.getElementById(`save-btn-${problemId}`);
-            if (!textarea) return;
-
-            const notesText = textarea.value;
-            const prob = problemsData.find(p => p.id === problemId);
-            if (prob) prob.pattern_notes = notesText;
-
-            if (btn) {
-                btn.disabled = true;
-                btn.innerHTML = `<i data-lucide="loader-2" class="w-3.5 h-3.5 animate-spin"></i> <span>Saving...</span>`;
-                lucide.createIcons();
-            }
-
-            apiFetch(`/api/progress/${problemId}/notes`, {
-                method: 'PUT',
-                body: JSON.stringify({ pattern_notes: notesText })
-            }).then(() => {
-                if (statusLabel) {
-                    statusLabel.innerText = "Saved to DB ✓";
-                    statusLabel.className = "text-xs text-emerald-400 font-mono";
-                }
-                showToast(`Notes saved for #${problemId}`);
-                if (btn) {
-                    btn.disabled = false;
-                    btn.innerHTML = `<i data-lucide="check" class="w-3.5 h-3.5"></i> <span>Saved!</span>`;
-                    lucide.createIcons();
-                    setTimeout(() => {
-                        btn.innerHTML = `<i data-lucide="save" class="w-3.5 h-3.5"></i> <span>Save Notes</span>`;
-                        lucide.createIcons();
-                    }, 2000);
-                }
-            });
-        }
-
-        function copyNotes(problemId, event) {
-            if (event) event.stopPropagation();
-            const textarea = document.getElementById(`note-input-${problemId}`);
-            if (!textarea || !textarea.value) {
-                showToast("No notes to copy!", "error");
-                return;
-            }
-            navigator.clipboard.writeText(textarea.value).then(() => {
-                showToast("Notes copied to clipboard!");
-            });
-        }
-
-        function toggleTimer(problemId, event) {
-            if (event) event.stopPropagation();
-            const timerBtn = document.getElementById(`timer-btn-${problemId}`);
-            const display = document.getElementById(`timer-display-${problemId}`);
-            
-            if (activeTimers[problemId]) {
-                clearInterval(activeTimers[problemId].interval);
-                const elapsedMin = Math.max(1, Math.round(activeTimers[problemId].seconds / 60));
-                delete activeTimers[problemId];
-
-                if (timerBtn) {
-                    timerBtn.className = "px-3 py-1.5 bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 rounded-xl text-xs font-bold flex items-center gap-1.5 hover:bg-emerald-500/30 transition";
-                    timerBtn.innerHTML = `<i data-lucide="play" class="w-3.5 h-3.5"></i> <span>Start Timer</span>`;
-                    lucide.createIcons();
-                }
-
-                const prob = problemsData.find(p => p.id === problemId);
-                const newTotalTime = ((prob && prob.time_min) || 0) + elapsedMin;
-                if (prob) prob.time_min = newTotalTime;
-
-                apiFetch(`/api/progress/${problemId}/time`, {
-                    method: 'PUT',
-                    body: JSON.stringify({ time_min: newTotalTime })
-                }).then(() => {
-                    showToast(`Logged +${elapsedMin} min to problem #${problemId}!`);
-                    renderTable();
-                });
-
-            } else {
-                activeTimers[problemId] = { seconds: 0 };
-                if (timerBtn) {
-                    timerBtn.className = "px-3 py-1.5 bg-rose-500/20 text-rose-300 border border-rose-500/30 rounded-xl text-xs font-bold flex items-center gap-1.5 hover:bg-rose-500/30 transition animate-pulse";
-                    timerBtn.innerHTML = `<i data-lucide="square" class="w-3.5 h-3.5"></i> <span>Stop & Save</span>`;
-                    lucide.createIcons();
-                }
-                activeTimers[problemId].interval = setInterval(() => {
-                    activeTimers[problemId].seconds++;
-                    const s = activeTimers[problemId].seconds;
-                    const mins = String(Math.floor(s / 60)).padStart(2, '0');
-                    const secs = String(s % 60).padStart(2, '0');
-                    if (display) display.innerText = `${mins}:${secs}`;
-                }, 1000);
-            }
-        }
-
-        function calculateDue(solvedDate, revisions) {
-            if (!solvedDate || revisions >= 5) return revisions >= 5 ? 'Mastered' : 'N/A';
-            const d = new Date(solvedDate);
-            d.setDate(d.getDate() + SPACING[Math.min(revisions, 4)]);
-            return d.toISOString().split('T')[0];
-        }
-
-        function animateValue(id, endValue) {
-            const el = document.getElementById(id);
-            if (!el) return;
-            const startValue = 0;
-            const duration = 600;
-            const startTime = performance.now();
-
-            function update(currentTime) {
-                const elapsed = currentTime - startTime;
-                const progress = Math.min(elapsed / duration, 1);
-                const current = Math.floor(progress * (endValue - startValue) + startValue);
-                el.innerText = id === 'stat-rate' ? current + '%' : current;
-                if (progress < 1) requestAnimationFrame(update);
-            }
-            requestAnimationFrame(update);
-        }
-
-        function updateTopMetrics() {
-            const total = problemsData.length;
-            const solved = problemsData.filter(p => p.status === 'Solved' || p.status === 'Mastered').length;
-            const mastered = problemsData.filter(p => p.revisions >= 5 || p.status === 'Mastered').length;
-            const pct = total ? Math.round((solved / total) * 100) : 0;
-            const today = new Date().toISOString().split('T')[0];
-
-            const dueCount = problemsData.filter(p => {
-                if (!p.solved_date || p.revisions >= 5) return false;
-                const due = calculateDue(p.solved_date, p.revisions);
-                return due !== 'Mastered' && due !== 'N/A' && due <= today;
-            }).length;
-
-            animateValue('stat-total', total);
-            animateValue('stat-solved', solved);
-            animateValue('stat-mastered', mastered);
-            animateValue('stat-due', dueCount);
-            animateValue('stat-rate', pct);
-            document.getElementById('stat-solved-bar').style.width = pct + '%';
-        }
-
-        function toggleSection(bodyId, iconId) {
-            const body = document.getElementById(bodyId);
-            const icon = document.getElementById(iconId);
-            if (body) { body.classList.toggle('hidden'); if (icon) icon.classList.toggle('rotate-180'); }
-        }
-
-        function setFilterChip(category, value) {
-            if (category === 'diff') {
-                ['ALL', 'Easy', 'Medium', 'Hard'].forEach(v => {
-                    const btn = document.getElementById(`chip-diff-${v}`);
-                    if (btn) btn.className = v === value ? "px-3 py-1 rounded-xl text-xs font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 transition" : "px-3 py-1 rounded-xl text-xs font-bold bg-obsidian-950 text-slate-400 border border-obsidian-800 hover:text-white transition";
-                });
-                selectedDiffChip = value;
-            } else if (category === 'status') {
-                ['ALL', 'Todo', 'Hint-solved', 'Solved', 'Mastered'].forEach(v => {
-                    const btn = document.getElementById(`chip-status-${v}`);
-                    if (btn) btn.className = v === value ? "px-3 py-1 rounded-xl text-xs font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 transition" : "px-3 py-1 rounded-xl text-xs font-bold bg-obsidian-950 text-slate-400 border border-obsidian-800 hover:text-white transition";
-                });
-                selectedStatusChip = value;
-            }
-            renderTable();
-        }
-
-        function populateTopicsFilter() {
-            const select = document.getElementById('filter-topic');
-            select.innerHTML = '<option value="ALL">All Topics</option>';
-            [...new Set(problemsData.map(p => p.topic))].forEach(t => { select.innerHTML += `<option value="${t}">${t}</option>`; });
-        }
-
-        function renderTable() {
-            const search = document.getElementById('search-input').value.toLowerCase();
-            const topic = document.getElementById('filter-topic').value;
-
-            const filtered = problemsData.filter(p => {
-                const matchSearch = p.name.toLowerCase().includes(search) || (p.pattern_notes && p.pattern_notes.toLowerCase().includes(search));
-                const matchTopic = topic === 'ALL' || p.topic === topic;
-                const matchStatus = selectedStatusChip === 'ALL' || p.status === selectedStatusChip;
-                const matchDiff = selectedDiffChip === 'ALL' || p.difficulty === selectedDiffChip;
-                return matchSearch && matchTopic && matchStatus && matchDiff;
-            });
-
-            const tbody = document.getElementById('table-body');
-            tbody.innerHTML = filtered.map(p => {
-                const nextDue = calculateDue(p.solved_date, p.revisions);
-                const diffBadge = p.difficulty === 'Easy' ? 'bg-cyan-500/15 text-cyan-300 border-cyan-500/30' : p.difficulty === 'Medium' ? 'bg-amber-500/15 text-amber-300 border-amber-500/30' : 'bg-rose-500/15 text-rose-300 border-rose-500/30';
-                const priorityBadge = p.priority === 'P1' ? 'bg-orange-500/20 text-orange-400 border-orange-500/30 font-mono' : 'bg-blue-500/15 text-blue-400 border-blue-500/30 font-mono';
-                const isExpanded = expandedRowIds.has(p.id);
-
-                return `
-                    <tr class="hover:bg-obsidian-900/60 transition cursor-pointer" onclick="toggleExpand(${p.id})">
-                        <td class="p-4 text-center font-mono text-slate-500">${p.id}</td>
-                        <td class="p-4 font-bold text-slate-100">
-                            <a href="${p.url || '#'}" target="_blank" rel="noopener noreferrer" onclick="event.stopPropagation()" class="hover:text-emerald-400 transition inline-flex items-center gap-1.5 group">
-                                <span>${p.name}</span>
-                                <i data-lucide="external-link" class="w-3.5 h-3.5 text-slate-500 group-hover:text-emerald-400"></i>
-                            </a>
-                        </td>
-                        <td class="p-4 text-slate-400 text-[11px]">${p.topic}</td>
-                        <td class="p-4"><span class="px-2 py-0.5 rounded-md text-[10px] font-bold border ${diffBadge}">${p.difficulty}</span></td>
-                        <td class="p-4"><span class="px-2 py-0.5 rounded-md text-[10px] font-bold border ${priorityBadge}">${p.priority}</span></td>
-                        <td class="p-4" onclick="event.stopPropagation()">
-                            <select onchange="updateProgress(${p.id}, 'status', this.value)" class="bg-obsidian-950 border border-obsidian-800 rounded-lg px-2 py-1 text-xs text-slate-200 outline-none focus:border-emerald-500/50">
-                                <option value="Todo" ${p.status === 'Todo' ? 'selected' : ''}>Todo</option>
-                                <option value="Hint-solved" ${p.status === 'Hint-solved' ? 'selected' : ''}>Hint-solved</option>
-                                <option value="Solved" ${p.status === 'Solved' ? 'selected' : ''}>Solved</option>
-                                <option value="Mastered" ${p.status === 'Mastered' ? 'selected' : ''}>Mastered</option>
-                            </select>
-                        </td>
-                        <td class="p-4 text-center font-mono text-cyan-300 font-semibold" onclick="event.stopPropagation()">${p.time_min || 0}m</td>
-                        <td class="p-4 text-center" onclick="event.stopPropagation()">
-                            <input type="number" min="0" max="5" value="${p.revisions || 0}" onchange="updateProgress(${p.id}, 'revisions', parseInt(this.value))" class="w-12 bg-obsidian-950 border border-obsidian-800 rounded-lg text-center py-0.5 text-xs text-emerald-300 font-bold font-mono outline-none">
-                        </td>
-                        <td class="p-4 font-mono text-[11px] ${nextDue === 'Mastered' ? 'text-indigo-400 font-bold' : 'text-amber-400'}">${nextDue}</td>
-                        <td class="p-4 text-center text-slate-400">
-                            <i data-lucide="chevron-down" id="expand-icon-${p.id}" class="w-4 h-4 mx-auto transition-transform ${isExpanded ? 'rotate-180' : ''}"></i>
-                        </td>
-                    </tr>
-                    <tr id="expand-row-${p.id}" class="${isExpanded ? '' : 'hidden'} bg-obsidian-900/40 border-b border-obsidian-800">
-                        <td colspan="10" class="p-4">
-                            <div class="bg-obsidian-950 p-4 rounded-2xl border border-obsidian-800 space-y-4" onclick="event.stopPropagation()">
-                                <div class="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-obsidian-800/80">
-                                    <div class="flex items-center gap-2">
-                                        <i data-lucide="timer" class="w-4 h-4 text-cyan-400"></i>
-                                        <span class="text-xs font-bold text-slate-300 uppercase">Solving Stopwatch:</span>
-                                        <span id="timer-display-${p.id}" class="font-mono text-sm font-black text-cyan-300 bg-obsidian-900 px-3 py-1 rounded-xl border border-obsidian-800">00:00</span>
-                                        <button id="timer-btn-${p.id}" onclick="toggleTimer(${p.id}, event)" class="px-3 py-1.5 bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 rounded-xl text-xs font-bold flex items-center gap-1.5 hover:bg-emerald-500/30 transition">
-                                            <i data-lucide="play" class="w-3.5 h-3.5"></i>
-                                            <span>Start Timer</span>
-                                        </button>
-                                    </div>
-                                    <span id="note-status-${p.id}" class="text-xs text-slate-400 font-medium"></span>
-                                </div>
-
-                                <div class="space-y-2">
-                                    <div class="flex items-center justify-between">
-                                        <label class="text-[11px] uppercase font-bold text-emerald-400 flex items-center gap-1.5">
-                                            <i data-lucide="file-text" class="w-3.5 h-3.5"></i>
-                                            Key Logic & Pattern Notes
-                                        </label>
-                                        <button onclick="copyNotes(${p.id}, event)" class="text-xs text-slate-400 hover:text-emerald-400 flex items-center gap-1 transition">
-                                            <i data-lucide="copy" class="w-3.5 h-3.5"></i>
-                                            <span>Copy Notes</span>
-                                        </button>
-                                    </div>
-                                    <textarea id="note-input-${p.id}" placeholder="Write key approach, edge cases, pattern insights, or time/space complexity notes here..." class="w-full bg-obsidian-900 border border-obsidian-800 rounded-xl p-3 text-xs text-slate-200 outline-none focus:border-emerald-500 h-24 font-mono leading-relaxed transition">${p.pattern_notes || ''}</textarea>
-                                </div>
-
-                                <div class="flex justify-end gap-2">
-                                    <button onclick="saveNotes(${p.id}, event)" id="save-btn-${p.id}" class="px-4 py-2 bg-gradient-to-r from-emerald-500 to-cyan-500 hover:opacity-90 text-black font-extrabold rounded-xl text-xs transition flex items-center gap-1.5 shadow-md shadow-emerald-500/10">
-                                        <i data-lucide="save" class="w-3.5 h-3.5"></i>
-                                        <span>Save Notes</span>
-                                    </button>
-                                </div>
-                            </div>
-                        </td>
-                    </tr>
-                `;
-            }).join('');
-            lucide.createIcons();
-        }
-
-        function toggleExpand(id) {
-            if (expandedRowIds.has(id)) {
-                expandedRowIds.delete(id);
-            } else {
-                expandedRowIds.add(id);
-            }
-            const row = document.getElementById(`expand-row-${id}`);
-            const icon = document.getElementById(`expand-icon-${id}`);
-            if (row) row.classList.toggle('hidden', !expandedRowIds.has(id));
-            if (icon) icon.classList.toggle('rotate-180', expandedRowIds.has(id));
-        }
-
-        function allowDrop(e) { e.preventDefault(); }
-        function handleDragStart(e, id) { e.dataTransfer.setData("text/plain", id); }
-        function handleDrop(e, targetStatus) {
-            e.preventDefault();
-            const id = parseInt(e.dataTransfer.getData("text/plain"));
-            if (id) updateProgress(id, 'status', targetStatus);
-        }
-
-        function renderKanban() {
-            const columns = { 'Todo': 'todo', 'Hint-solved': 'hint', 'Solved': 'solved', 'Mastered': 'mastered' };
-            Object.keys(columns).forEach(st => {
-                const list = problemsData.filter(p => p.status === st);
-                document.getElementById(`kanban-count-${columns[st]}`).innerText = list.length;
-                document.getElementById(`kanban-list-${columns[st]}`).innerHTML = list.map(p => `
-                    <div draggable="true" ondragstart="handleDragStart(event, ${p.id})" class="glass-card p-4 rounded-2xl space-y-3 cursor-grab active:cursor-grabbing hover:border-emerald-500/30 transition">
-                        <div class="flex justify-between items-start gap-2">
-                            <a href="${p.url || '#'}" target="_blank" rel="noopener noreferrer" class="font-bold text-xs text-slate-100 hover:text-emerald-400 transition inline-flex items-center gap-1 group">
-                                <span>${p.name}</span>
-                                <i data-lucide="external-link" class="w-3 h-3 text-slate-500 group-hover:text-emerald-400"></i>
-                            </a>
-                            <span class="text-[9px] font-bold px-1.5 py-0.5 rounded border ${p.difficulty === 'Easy' ? 'bg-cyan-500/10 text-cyan-300 border-cyan-500/20' : p.difficulty === 'Medium' ? 'bg-amber-500/10 text-amber-300 border-amber-500/20' : 'bg-rose-500/10 text-rose-300 border-rose-500/20'}">${p.difficulty}</span>
-                        </div>
-                        <p class="text-[10px] text-slate-400">${p.topic}</p>
-                        <div class="flex justify-between items-center text-[10px] text-slate-500 pt-2 border-t border-obsidian-800">
-                            <span class="font-mono">Rev: ${p.revisions}/5</span>
-                            <span class="text-emerald-400 font-mono">${calculateDue(p.solved_date, p.revisions)}</span>
-                        </div>
-                    </div>
-                `).join('');
-            });
-        }
-
-        function renderCharts() {
-            const total = problemsData.length;
-            const solved = problemsData.filter(p => p.status === 'Solved').length;
-            const mastered = problemsData.filter(p => p.status === 'Mastered').length;
-            const hint = problemsData.filter(p => p.status === 'Hint-solved').length;
-            const todo = total - (solved + mastered + hint);
-
-            const ctxDoughnut = document.getElementById('doughnutChart').getContext('2d');
-            if (doughnutChartInstance) doughnutChartInstance.destroy();
-            
-            doughnutChartInstance = new Chart(ctxDoughnut, {
-                type: 'doughnut',
-                data: {
-                    labels: ['Todo', 'Hint-Solved', 'Solved', 'Mastered'],
-                    datasets: [{ data: [todo, hint, solved, mastered], backgroundColor: ['#27272a', '#f59e0b', '#10b981', '#6366f1'], borderWidth: 0 }]
-                },
-                options: { cutout: '75%', responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
-            });
-
-            const topicCounts = {};
-            problemsData.forEach(p => {
-                if (!topicCounts[p.topic]) topicCounts[p.topic] = { total: 0, solved: 0 };
-                topicCounts[p.topic].total++;
-                if (p.status === 'Solved' || p.status === 'Mastered') topicCounts[p.topic].solved++;
-            });
-
-            const labels = Object.keys(topicCounts).slice(0, 8);
-            const dataSolved = labels.map(l => topicCounts[l].solved);
-            const dataTotal = labels.map(l => topicCounts[l].total);
-
-            const ctxBar = document.getElementById('topicBarChart').getContext('2d');
-            if (topicChartInstance) topicChartInstance.destroy();
-
-            topicChartInstance = new Chart(ctxBar, {
-                type: 'bar',
-                data: {
-                    labels: labels,
-                    datasets: [
-                        { label: 'Solved', data: dataSolved, backgroundColor: '#10b981', borderRadius: 6 },
-                        { label: 'Total', data: dataTotal, backgroundColor: '#27272a', borderRadius: 6 }
-                    ]
-                },
-                options: {
-                    responsive: true, maintainAspectRatio: false,
-                    scales: { x: { grid: { display: false }, ticks: { color: '#a1a1aa' } }, y: { grid: { color: '#27272a' }, ticks: { color: '#a1a1aa' } } },
-                    plugins: { legend: { labels: { color: '#d4d4d8' } } }
-                }
-            });
-        }
-
-        // COMMAND PALETTE LOGIC
-        function toggleCommandPalette() {
-            const modal = document.getElementById('command-modal');
-            const searchInput = document.getElementById('cmd-search');
-            modal.classList.toggle('hidden');
-            modal.classList.toggle('flex');
-            if (!modal.classList.contains('hidden')) {
-                searchInput.value = '';
-                filterCommandPalette();
-                setTimeout(() => searchInput.focus(), 50);
-            }
-        }
-
-        function filterCommandPalette() {
-            const query = document.getElementById('cmd-search').value.toLowerCase();
-            const resultsBox = document.getElementById('cmd-results');
-            const matches = problemsData.filter(p => p.name.toLowerCase().includes(query) || p.topic.toLowerCase().includes(query) || (p.pattern_notes && p.pattern_notes.toLowerCase().includes(query))).slice(0, 8);
-
-            resultsBox.innerHTML = matches.map(p => `
-                <div onclick="jumpToProblem(${p.id})" class="p-3 hover:bg-obsidian-800/80 rounded-xl cursor-pointer transition flex items-center justify-between group">
-                    <div class="flex items-center gap-3">
-                        <div class="p-2 bg-emerald-500/10 text-emerald-400 rounded-lg group-hover:bg-emerald-500/20">
-                            <i data-lucide="code-2" class="w-4 h-4"></i>
-                        </div>
-                        <div>
-                            <p class="text-xs font-bold text-slate-100 group-hover:text-emerald-300 transition">${p.name}</p>
-                            <p class="text-[10px] text-slate-400">${p.topic} • ${p.difficulty}</p>
-                        </div>
-                    </div>
-                    <span class="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-obsidian-950 text-slate-400 border border-obsidian-800">${p.status}</span>
-                </div>
-            `).join('') || `<p class="p-4 text-xs text-slate-500 text-center">No matching problems found</p>`;
-            lucide.createIcons();
-        }
-
-        function jumpToProblem(id) {
-            toggleCommandPalette();
-            expandedRowIds.add(id);
-            renderTable();
-            const el = document.getElementById(`expand-row-${id}`);
-            if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        }
-
-        document.addEventListener('keydown', (e) => {
-            if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
-                e.preventDefault();
-                toggleCommandPalette();
-            }
-            if (e.key === 'Escape') {
-                const modal = document.getElementById('command-modal');
-                if (!modal.classList.contains('hidden')) toggleCommandPalette();
-            }
-        });
-
-        initCyberCanvas();
-        initApp();
         lucide.createIcons();
     </script>
 </body>

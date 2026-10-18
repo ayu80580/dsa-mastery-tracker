@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Kanban | DSA Mastery Engine</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script>
+        tailwind.config = { darkMode: 'class', theme: { extend: { colors: { obsidian: { 950: '#09090b', 900: '#121215', 800: '#27272a' } } } } }
+    </script>
+    <style>
+        body { background: #09090b; color: #f4f4f5; font-family: 'Inter', sans-serif; }
+        .glass-card { background: rgba(24, 24, 27, 0.7); backdrop-filter: blur(16px); border: 1px solid rgba(255, 255, 255, 0.08); }
+        .kanban-col { min-height: 500px; background: rgba(18, 18, 21, 0.6); border: 1px solid rgba(255, 255, 255, 0.05); }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col">
+
+    <nav class="sticky top-0 z-50 glass-card border-b border-obsidian-800 px-6 py-3.5 flex items-center justify-between">
+        <div class="flex items-center gap-3">
+            <div class="p-2 bg-emerald-500/10 text-emerald-400 rounded-xl border border-emerald-500/20">
+                <i data-lucide="sparkles" class="w-5 h-5"></i>
+            </div>
+            <span class="font-black text-lg tracking-wide text-white">DSA ENGINE</span>
+        </div>
+
+        <div class="flex items-center gap-6 text-xs font-bold text-slate-400">
+            <a href="/dashboard" class="hover:text-emerald-400 transition">Dashboard</a>
+            <a href="/roadmaps" class="hover:text-emerald-400 transition">Roadmaps</a>
+            <a href="/problems" class="hover:text-emerald-400 transition">Problems</a>
+            <a href="/kanban" class="text-emerald-400 border-b-2 border-emerald-400 pb-1">Kanban</a>
+            <a href="/analytics" class="hover:text-emerald-400 transition">Analytics</a>
+            <a href="/ai-coach" class="hover:text-emerald-400 transition">AI Mentor</a>
+        </div>
+    </nav>
+
+    <main class="max-w-7xl mx-auto px-6 py-8 flex-1 w-full space-y-6">
+        <h1 class="text-2xl font-black text-white">Drag & Drop Kanban Board</h1>
+
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-5">
+            <div class="kanban-col rounded-3xl p-4 space-y-3" ondragover="event.preventDefault()" ondrop="drop(event, 'Todo')">
+                <h3 class="text-xs font-bold uppercase text-slate-400 pb-2 border-b border-obsidian-800">Todo</h3>
+                <div id="col-todo" class="space-y-3"></div>
+            </div>
+            <div class="kanban-col rounded-3xl p-4 space-y-3" ondragover="event.preventDefault()" ondrop="drop(event, 'Hint-solved')">
+                <h3 class="text-xs font-bold uppercase text-amber-400 pb-2 border-b border-obsidian-800">Hint-Solved</h3>
+                <div id="col-hint" class="space-y-3"></div>
+            </div>
+            <div class="kanban-col rounded-3xl p-4 space-y-3" ondragover="event.preventDefault()" ondrop="drop(event, 'Solved')">
+                <h3 class="text-xs font-bold uppercase text-emerald-400 pb-2 border-b border-obsidian-800">Solved</h3>
+                <div id="col-solved" class="space-y-3"></div>
+            </div>
+            <div class="kanban-col rounded-3xl p-4 space-y-3" ondragover="event.preventDefault()" ondrop="drop(event, 'Mastered')">
+                <h3 class="text-xs font-bold uppercase text-indigo-400 pb-2 border-b border-obsidian-800">Mastered</h3>
+                <div id="col-mastered" class="space-y-3"></div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        const jwtToken = localStorage.getItem('dsa_jwt');
+        let problems = [];
+
+        function loadKanban() {
+            fetch('/api/problems?track=beginner', { headers: { 'Authorization': `Bearer ${jwtToken}` } })
+                .then(r => r.json())
+                .then(data => { problems = data; render(); });
+        }
+
+        function render() {
+            const cols = { 'Todo': 'col-todo', 'Hint-solved': 'col-hint', 'Solved': 'col-solved', 'Mastered': 'col-mastered' };
+            Object.keys(cols).forEach(st => {
+                document.getElementById(cols[st]).innerHTML = problems.filter(p => p.status === st).map(p => `
+                    <div draggable="true" ondragstart="event.dataTransfer.setData('text/plain', ${p.id})" class="glass-card p-4 rounded-2xl cursor-grab active:cursor-grabbing space-y-2">
+                        <p class="font-bold text-xs text-white">${p.name}</p>
+                        <p class="text-[10px] text-slate-400">${p.topic}</p>
+                    </div>
+                `).join('');
+            });
+        }
+
+        function drop(e, status) {
+            e.preventDefault();
+            const id = parseInt(e.dataTransfer.getData('text/plain'));
+            fetch(`/api/progress/${id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${jwtToken}` },
+                body: JSON.stringify({ status })
+            }).then(() => loadKanban());
+        }
+
+        loadKanban();
+    </script>
+</body>
+</html>

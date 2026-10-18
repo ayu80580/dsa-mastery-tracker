@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Mentor & Mock Interview | DSA Mastery Engine</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script>
+        tailwind.config = { darkMode: 'class', theme: { extend: { colors: { obsidian: { 950: '#09090b', 900: '#121215', 800: '#27272a' } } } } }
+    </script>
+    <style>
+        body { background: #09090b; color: #f4f4f5; font-family: 'Inter', sans-serif; }
+        .glass-card { background: rgba(24, 24, 27, 0.7); backdrop-filter: blur(16px); border: 1px solid rgba(255, 255, 255, 0.08); }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col">
+
+    <nav class="sticky top-0 z-50 glass-card border-b border-obsidian-800 px-6 py-3.5 flex items-center justify-between">
+        <div class="flex items-center gap-3">
+            <div class="p-2 bg-emerald-500/10 text-emerald-400 rounded-xl border border-emerald-500/20">
+                <i data-lucide="sparkles" class="w-5 h-5"></i>
+            </div>
+            <span class="font-black text-lg tracking-wide text-white">DSA ENGINE</span>
+        </div>
+
+        <div class="flex items-center gap-6 text-xs font-bold text-slate-400">
+            <a href="/dashboard" class="hover:text-emerald-400 transition">Dashboard</a>
+            <a href="/roadmaps" class="hover:text-emerald-400 transition">Roadmaps</a>
+            <a href="/problems" class="hover:text-emerald-400 transition">Problems</a>
+            <a href="/kanban" class="hover:text-emerald-400 transition">Kanban</a>
+            <a href="/analytics" class="hover:text-emerald-400 transition">Analytics</a>
+            <a href="/ai-coach" class="text-emerald-400 border-b-2 border-emerald-400 pb-1">AI Mentor</a>
+        </div>
+    </nav>
+
+    <main class="max-w-4xl mx-auto px-6 py-8 flex-1 w-full space-y-8">
+        <div>
+            <h1 class="text-2xl font-black text-white">AI Strategy Studio & Mock Interview Simulator</h1>
+            <p class="text-xs text-slate-400 mt-1">Simulate real-world technical interviews with AI algorithmic constraints</p>
+        </div>
+
+        <div class="glass-card p-6 rounded-3xl space-y-4">
+            <div class="flex gap-4">
+                <select id="sim-topic" class="bg-obsidian-900 border border-obsidian-800 text-xs text-slate-200 rounded-xl px-4 py-2.5 outline-none flex-1">
+                    <option value="Dynamic Programming">Dynamic Programming</option>
+                    <option value="Graphs">Graphs</option>
+                    <option value="Sliding Window">Sliding Window</option>
+                </select>
+                <button onclick="startSim()" class="px-6 py-2.5 bg-gradient-to-r from-emerald-500 to-cyan-500 text-black font-extrabold rounded-xl text-xs shadow-lg shadow-emerald-500/20">Generate Question</button>
+            </div>
+
+            <div id="sim-output" class="p-5 bg-obsidian-950 border border-obsidian-800 rounded-2xl text-xs text-slate-300 leading-relaxed font-mono min-h-[160px] whitespace-pre-wrap">Click Generate Question to launch simulated technical session...</div>
+        </div>
+    </main>
+
+    <script>
+        const jwtToken = localStorage.getItem('dsa_jwt');
+
+        function startSim() {
+            const topic = document.getElementById('sim-topic').value;
+            const output = document.getElementById('sim-output');
+            output.innerText = "Simulating technical question setup...";
+
+            fetch('/api/coach/interview-sim', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${jwtToken}` },
+                body: JSON.stringify({ topic, difficulty: 'Medium' })
+            }).then(r => r.json()).then(data => {
+                output.innerText = data.response || data.question;
+            });
+        }
+
+        lucide.createIcons();
+    </script>
+</body>
+</html>

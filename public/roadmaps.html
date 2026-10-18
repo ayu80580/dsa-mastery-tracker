@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dynamic Roadmaps | DSA Mastery Engine</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script>
+        tailwind.config = { darkMode: 'class', theme: { extend: { colors: { obsidian: { 950: '#09090b', 900: '#121215', 800: '#27272a' } } } } }
+    </script>
+    <style>
+        body { background: #09090b; color: #f4f4f5; font-family: 'Inter', sans-serif; }
+        .glass-card { background: rgba(24, 24, 27, 0.7); backdrop-filter: blur(16px); border: 1px solid rgba(255, 255, 255, 0.08); }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col">
+
+    <nav class="sticky top-0 z-50 glass-card border-b border-obsidian-800 px-6 py-3.5 flex items-center justify-between">
+        <div class="flex items-center gap-3">
+            <div class="p-2 bg-emerald-500/10 text-emerald-400 rounded-xl border border-emerald-500/20">
+                <i data-lucide="sparkles" class="w-5 h-5"></i>
+            </div>
+            <span class="font-black text-lg tracking-wide text-white">DSA ENGINE</span>
+        </div>
+
+        <div class="flex items-center gap-6 text-xs font-bold text-slate-400">
+            <a href="/dashboard" class="hover:text-emerald-400 transition">Dashboard</a>
+            <a href="/roadmaps" class="text-emerald-400 border-b-2 border-emerald-400 pb-1">Roadmaps</a>
+            <a href="/problems" class="hover:text-emerald-400 transition">Problems</a>
+            <a href="/kanban" class="hover:text-emerald-400 transition">Kanban</a>
+            <a href="/analytics" class="hover:text-emerald-400 transition">Analytics</a>
+            <a href="/ai-coach" class="hover:text-emerald-400 transition">AI Mentor</a>
+        </div>
+    </nav>
+
+    <main class="max-w-7xl mx-auto px-6 py-8 flex-1 w-full space-y-8">
+        <div>
+            <h1 class="text-2xl font-black text-white">Dynamic Curriculum Roadmaps</h1>
+            <p class="text-xs text-slate-400 mt-1">Drop any Excel spreadsheet into the root directory (e.g., <code class="text-emerald-400 font-mono">intermediate.xlsx</code>) to auto-render new tracks.</p>
+        </div>
+
+        <!-- EXCEL UPLOAD DROPZONE -->
+        <div class="glass-card p-6 rounded-3xl border border-dashed border-emerald-500/40 text-center space-y-3 cursor-pointer hover:border-emerald-500 transition" onclick="document.getElementById('excel-input').click()">
+            <div class="w-12 h-12 mx-auto rounded-2xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center">
+                <i data-lucide="upload-cloud" class="w-6 h-6"></i>
+            </div>
+            <div>
+                <p class="text-xs font-bold text-white">Click or Drag & Drop Any Excel File</p>
+                <p class="text-[10px] text-slate-400 font-mono">e.g., intermediate.xlsx, advanced.xlsx, system_design.xlsx</p>
+            </div>
+            <input type="file" id="excel-input" accept=".xlsx" onchange="uploadExcel(this.files[0])" class="hidden">
+        </div>
+
+        <!-- ROADMAP TIERS GRID -->
+        <div id="tracks-grid" class="grid grid-cols-1 md:grid-cols-3 gap-6"></div>
+    </main>
+
+    <script>
+        const jwtToken = localStorage.getItem('dsa_jwt');
+
+        function loadStatus() {
+            fetch('/api/tracks/status', { headers: { 'Authorization': `Bearer ${jwtToken}` } })
+                .then(r => r.json())
+                .then(data => {
+                    const grid = document.getElementById('tracks-grid');
+                    const trackKeys = Object.keys(data.tracks);
+
+                    if (trackKeys.length === 0) {
+                        grid.innerHTML = `<p class="text-xs text-slate-500 col-span-3 text-center">No Excel tracks found in root directory. Upload one above or drop an .xlsx file in the project directory.</p>`;
+                        return;
+                    }
+
+                    grid.innerHTML = trackKeys.map(key => {
+                        const track = data.tracks[key];
+                        return `
+                            <div class="glass-card p-6 rounded-3xl space-y-4 border border-emerald-500/40 hover:border-emerald-400 transition">
+                                <div class="flex justify-between items-center">
+                                    <span class="text-[10px] font-mono font-bold px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300">ACTIVE</span>
+                                    <span class="text-xs text-slate-400 font-mono">${track.problemCount} Problems</span>
+                                </div>
+                                <h3 class="text-base font-extrabold text-white">${track.name}</h3>
+                                <p class="text-xs text-slate-400">Auto-detected track spreadsheet from project root directory.</p>
+                                <a href="/problems?track=${track.id}" class="block text-center py-2.5 bg-obsidian-900 border border-obsidian-800 rounded-xl text-xs font-bold text-slate-200 hover:text-emerald-400 transition">Explore Track Roadmap</a>
+                            </div>
+                        `;
+                    }).join('');
+                    lucide.createIcons();
+                });
+        }
+
+        function uploadExcel(file) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                fetch('/api/tracks/upload-excel', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${jwtToken}` },
+                    body: JSON.stringify({ fileBase64: e.target.result, fileName: file.name })
+                }).then(r => r.json()).then(res => { alert(res.message); loadStatus(); });
+            };
+            reader.readAsDataURL(file);
+        }
+
+        loadStatus();
+    </script>
+</body>
+</html>
