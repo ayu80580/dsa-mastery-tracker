@@ -3,7 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Deep Telemetry Analytics | DSA Mastery Engine</title>
+    <title>DSA Engine | Telemetry Analytics</title>
+
+    <!-- CUSTOM TAB FAVICON LOGO -->
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2310b981' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'><polygon points='12 2 2 7 12 12 22 7 12 2'/><polyline points='2 17 12 22 22 17'/><polyline points='2 12 12 17 22 12'/></svg>">
+
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -22,7 +26,7 @@
     <nav class="sticky top-0 z-50 glass-card border-b border-obsidian-800 px-6 py-3.5 flex items-center justify-between">
         <div class="flex items-center gap-3">
             <div class="p-2 bg-emerald-500/10 text-emerald-400 rounded-xl border border-emerald-500/20">
-                <i data-lucide="sparkles" class="w-5 h-5"></i>
+                <i data-lucide="layers" class="w-5 h-5"></i>
             </div>
             <span class="font-black text-lg tracking-wide text-white">DSA ENGINE</span>
         </div>
@@ -39,7 +43,6 @@
         <button onclick="logout()" class="px-3.5 py-1.5 bg-obsidian-900 text-slate-400 rounded-xl border border-obsidian-800 hover:text-white text-xs font-bold">Logout</button>
     </nav>
 
-    <!-- MAIN CONTENT -->
     <main class="max-w-7xl mx-auto px-6 py-8 flex-1 w-full space-y-8">
         
         <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -48,7 +51,6 @@
                 <p class="text-xs text-slate-400 mt-1">Algorithmic weakness radar & topic completion metrics</p>
             </div>
 
-            <!-- Track Filter Selector -->
             <select id="analytics-track" onchange="loadAnalytics()" class="bg-obsidian-900 border border-obsidian-800 text-xs text-slate-200 font-bold px-3 py-2 rounded-xl outline-none focus:border-emerald-500">
                 <option value="all">All Tracks Aggregated</option>
                 <option value="beginner">Beginner Track</option>
@@ -57,10 +59,8 @@
             </select>
         </div>
 
-        <!-- CHARTS GRID -->
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
             
-            <!-- TOPIC COMPLETION CHART -->
             <div class="glass-card p-6 rounded-3xl space-y-4">
                 <div class="flex justify-between items-center border-b border-obsidian-800 pb-3">
                     <h3 class="text-xs font-bold uppercase tracking-wider text-emerald-400 flex items-center gap-2">
@@ -72,7 +72,6 @@
                 </div>
             </div>
 
-            <!-- HINT DEPENDENCY RADAR CHART -->
             <div class="glass-card p-6 rounded-3xl space-y-4">
                 <div class="flex justify-between items-center border-b border-obsidian-800 pb-3">
                     <h3 class="text-xs font-bold uppercase tracking-wider text-amber-400 flex items-center gap-2">
@@ -106,11 +105,9 @@
                 const solved = (data.topics || []).map(t => t.solved);
                 const hints = (data.topics || []).map(t => t.hint_used);
 
-                // Chart.js Dark Mode Defaults
                 Chart.defaults.color = '#a1a1aa';
                 Chart.defaults.font.family = 'Inter';
 
-                // Render Topic Completion Bar Chart
                 const ctxBar = document.getElementById('topicChart').getContext('2d');
                 if (topicChartInstance) topicChartInstance.destroy();
 
@@ -136,7 +133,6 @@
                     }
                 });
 
-                // Render Hint Dependency Radar Chart
                 const ctxRadar = document.getElementById('hintChart').getContext('2d');
                 if (hintChartInstance) hintChartInstance.destroy();
 

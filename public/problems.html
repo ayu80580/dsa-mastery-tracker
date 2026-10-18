@@ -3,19 +3,20 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Executive Command HQ | DSA Mastery Engine</title>
+    <title>DSA Engine | Master Problems</title>
+
+    <!-- CUSTOM TAB FAVICON LOGO -->
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2310b981' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'><polygon points='12 2 2 7 12 12 22 7 12 2'/><polyline points='2 17 12 22 22 17'/><polyline points='2 12 12 17 22 12'/></svg>">
+
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <script>
-        tailwind.config = {
-            darkMode: 'class',
-            theme: { extend: { fontFamily: { sans: ['Inter'], mono: ['"JetBrains Mono"'] }, colors: { obsidian: { 950: '#09090b', 900: '#121215', 850: '#18181b', 800: '#27272a' } } } }
-        }
+        tailwind.config = { darkMode: 'class', theme: { extend: { colors: { obsidian: { 950: '#09090b', 900: '#121215', 800: '#27272a' } } } } }
     </script>
     <style>
         body { background: #09090b; color: #f4f4f5; font-family: 'Inter', sans-serif; }
-        .glass-card { background: rgba(24, 24, 27, 0.75); backdrop-filter: blur(16px); border: 1px solid rgba(255, 255, 255, 0.08); }
+        .glass-card { background: rgba(24, 24, 27, 0.7); backdrop-filter: blur(16px); border: 1px solid rgba(255, 255, 255, 0.08); }
     </style>
 </head>
 <body class="min-h-screen flex flex-col">
@@ -24,7 +25,7 @@
     <nav class="sticky top-0 z-50 glass-card border-b border-obsidian-800 px-6 py-3.5 flex items-center justify-between">
         <div class="flex items-center gap-3">
             <div class="p-2 bg-emerald-500/10 text-emerald-400 rounded-xl border border-emerald-500/20">
-                <i data-lucide="sparkles" class="w-5 h-5"></i>
+                <i data-lucide="layers" class="w-5 h-5"></i>
             </div>
             <span class="font-black text-lg tracking-wide text-white">DSA ENGINE</span>
         </div>
@@ -38,7 +39,7 @@
             <a href="/ai-coach" class="hover:text-emerald-400 transition">AI Mentor</a>
         </div>
 
-        <button onclick="logout()" class="px-3 py-1.5 bg-obsidian-900 text-slate-400 rounded-xl border border-obsidian-800 hover:text-white text-xs">Logout</button>
+        <button onclick="logout()" class="px-3 py-1.5 bg-obsidian-900 text-slate-400 rounded-xl border border-obsidian-800 hover:text-white text-xs font-bold">Logout</button>
     </nav>
 
     <!-- MAIN CONTENT -->
@@ -70,12 +71,12 @@
             <table class="w-full text-left text-xs">
                 <thead class="bg-obsidian-900 text-slate-400 font-bold border-b border-obsidian-800 uppercase">
                     <tr>
-                        <th class="p-4">#</th>
+                        <th class="p-4 w-12 text-center font-mono">#</th>
                         <th class="p-4">Problem Name</th>
                         <th class="p-4">Topic</th>
                         <th class="p-4">Difficulty</th>
                         <th class="p-4">Status</th>
-                        <th class="p-4">Time (m)</th>
+                        <th class="p-4">Time (M)</th>
                         <th class="p-4">Revisions</th>
                         <th class="p-4 text-center">LeetCode</th>
                     </tr>
@@ -86,11 +87,8 @@
     </main>
 
     <script>
-        // Session Check: Redirect to login if token is missing
         const jwtToken = localStorage.getItem('dsa_jwt');
-        if (!jwtToken) {
-            window.location.href = '/';
-        }
+        if (!jwtToken) window.location.href = '/';
 
         let problems = [];
         let currentTrack = new URLSearchParams(window.location.search).get('track') || 'beginner';
@@ -130,12 +128,7 @@
             })
             .then(data => {
                 if (!data) return;
-                // Array check prevents "TypeError: problems.filter is not a function"
-                if (Array.isArray(data)) {
-                    problems = data;
-                } else {
-                    problems = [];
-                }
+                problems = Array.isArray(data) ? data : [];
                 renderTable();
             })
             .catch(err => {
@@ -162,7 +155,7 @@
 
             tbody.innerHTML = filtered.map(p => `
                 <tr class="hover:bg-obsidian-900/50 transition">
-                    <td class="p-4 font-mono text-slate-500">${p.id}</td>
+                    <td class="p-4 text-center font-mono text-slate-500">${p.id}</td>
                     <td class="p-4 font-bold text-white">${p.name}</td>
                     <td class="p-4 text-slate-400">${p.topic}</td>
                     <td class="p-4">
@@ -172,7 +165,7 @@
                         }">${p.difficulty}</span>
                     </td>
                     <td class="p-4">
-                        <select onchange="updateStatus(${p.id}, this.value)" class="bg-obsidian-950 border border-obsidian-800 rounded px-2 py-1 text-slate-200">
+                        <select onchange="updateStatus(${p.id}, this.value)" class="bg-obsidian-950 border border-obsidian-800 rounded-lg px-2.5 py-1 text-slate-200 text-xs outline-none">
                             <option value="Todo" ${p.status === 'Todo' ? 'selected' : ''}>Todo</option>
                             <option value="Hint-solved" ${p.status === 'Hint-solved' ? 'selected' : ''}>Hint-solved</option>
                             <option value="Solved" ${p.status === 'Solved' ? 'selected' : ''}>Solved</option>
@@ -182,10 +175,15 @@
                     <td class="p-4 font-mono text-cyan-300">${p.time_min || 0}m</td>
                     <td class="p-4 font-mono text-emerald-400">${p.revisions || 0}/5</td>
                     <td class="p-4 text-center">
-                        <a href="${p.url}" target="_blank" class="px-3 py-1 bg-emerald-500/20 text-emerald-300 rounded-lg text-[11px] font-bold hover:bg-emerald-500/30">Jump <i data-lucide="external-link" class="w-3 h-3 inline"></i></a>
+                        <a href="${p.url || '#'}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 hover:bg-emerald-500 hover:text-black font-extrabold text-xs transition-all whitespace-nowrap shadow-sm group">
+                            <span>Jump</span>
+                            <i data-lucide="external-link" class="w-3.5 h-3.5 shrink-0 transition-transform group-hover:translate-x-0.5"></i>
+                        </a>
                     </td>
                 </tr>
             `).join('');
+
+            // Render Lucide icons properly after updating innerHTML
             lucide.createIcons();
         }
 
