@@ -227,6 +227,136 @@ app.put('/api/progress/:problemId', authenticateToken, async (req, res) => {
     }
 });
 
+// --- DASHBOARD API (Aggregates All Tracks) ---
+app.get('/api/dashboard', authenticateToken, async (req, res) => {
+    try {
+        const track = (req.query.track || 'all').toLowerCase().trim();
+        const userId = req.user.userId;
+
+        let whereClause = '';
+        let queryParams = [userId];
+
+        if (track !== 'all') {
+            whereClause = 'WHERE LOWER(COALESCE(p.track_level, \'beginner\')) = $2';
+            queryParams.push(track);
+        }
+
+        // Summary Statistics
+        const summaryRes = await pool.query(`
+            SELECT 
+                COUNT(p.id)::int as total,
+                SUM(CASE WHEN up.status IN ('Solved', 'Mastered') THEN 1 ELSE 0 END)::int as solved,
+                SUM(CASE WHEN up.status = 'Mastered' OR up.revisions >= 5 THEN 1 ELSE 0 END)::int as mastered,
+                SUM(CASE WHEN up.status = 'Hint-solved' THEN 1 ELSE 0 END)::int as hint_used
+            FROM problems p
+            LEFT JOIN user_progress up ON p.id = up.problem_id AND up.user_id = $1
+            ${whereClause}
+        `, queryParams);
+
+        const summary = summaryRes.rows[0] || { total: 0, solved: 0, mastered: 0, hint_used: 0 };
+
+        // Spaced Repetition Due Items
+        const today = new Date().toISOString().split('T')[0];
+        const dueRes = await pool.query(`
+            SELECT p.id, p.name, p.topic, p.difficulty, p.url, up.solved_date, COALESCE(up.revisions, 0) as revisions
+            FROM problems p
+            JOIN user_progress up ON p.id = up.problem_id AND up.user_id = $1
+            WHERE up.solved_date IS NOT NULL AND up.revisions < 5
+            ${track !== 'all' ? 'AND LOWER(COALESCE(p.track_level, \'beginner\')) = $2' : ''}
+            ORDER BY up.solved_date ASC
+        `, queryParams);
+
+        const intervals = [1, 3, 7, 21, 60];
+        const revisionsDue = dueRes.rows.filter(p => {
+            const d = new Date(p.solved_date);
+            d.setDate(d.getDate() + intervals[Math.min(p.revisions, 4)]);
+            return d.toISOString().split('T')[0] <= today;
+        });
+
+        // 365-Day Submission Heatmap Data
+        const heatmapRes = await pool.query(`
+            SELECT solved_date, COUNT(*)::int as count
+            FROM user_progress
+            WHERE user_id = $1 AND solved_date IS NOT NULL
+            GROUP BY solved_date
+        `, [userId]);
+
+        // Streak Calculation
+        const solvedDates = [...new Set(heatmapRes.rows.map(r => r.solved_date))].sort().reverse();
+        let streak = 0;
+        if (solvedDates.length > 0) {
+            let curr = new Date(solvedDates[0]);
+            for (const dStr of solvedDates) {
+                const d = new Date(dStr);
+                const diff = Math.round((curr - d) / (1000 * 60 * 60 * 24));
+                if (diff <= 1) { streak++; curr = d; } else break;
+            }
+        }
+
+        res.json({
+            summary: {
+                total: summary.total,
+                solvedCount: summary.solved,
+                masteredCount: summary.mastered,
+                dueCount: revisionsDue.length,
+                streak
+            },
+            revisionsDue: revisionsDue.slice(0, 5),
+            heatmap: heatmapRes.rows
+        });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// --- ANALYTICS API (Deep Topic Telemetry) ---
+app.get('/api/analytics/deep', authenticateToken, async (req, res) => {
+    try {
+        const track = (req.query.track || 'all').toLowerCase().trim();
+        const userId = req.user.userId;
+
+        let whereClause = '';
+        let queryParams = [userId];
+
+        if (track !== 'all') {
+            whereClause = 'WHERE LOWER(COALESCE(p.track_level, \'beginner\')) = $2';
+            queryParams.push(track);
+        }
+
+        const topicsRes = await pool.query(`
+            SELECT 
+                p.topic,
+                COUNT(p.id)::int as total,
+                SUM(CASE WHEN up.status IN ('Solved', 'Mastered') THEN 1 ELSE 0 END)::int as solved,
+                SUM(CASE WHEN up.status = 'Hint-solved' THEN 1 ELSE 0 END)::int as hint_used,
+                SUM(CASE WHEN up.status = 'Mastered' THEN 1 ELSE 0 END)::int as mastered
+            FROM problems p
+            LEFT JOIN user_progress up ON p.id = up.problem_id AND up.user_id = $1
+            ${whereClause}
+            GROUP BY p.topic
+            ORDER BY total DESC
+        `, queryParams);
+
+        const diffRes = await pool.query(`
+            SELECT 
+                p.difficulty,
+                COUNT(p.id)::int as total,
+                SUM(CASE WHEN up.status IN ('Solved', 'Mastered') THEN 1 ELSE 0 END)::int as solved
+            FROM problems p
+            LEFT JOIN user_progress up ON p.id = up.problem_id AND up.user_id = $1
+            ${whereClause}
+            GROUP BY p.difficulty
+        `, queryParams);
+
+        res.json({
+            topics: topicsRes.rows || [],
+            difficulties: diffRes.rows || []
+        });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
 // --- AUTH & HTML ROUTES ---
 app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));
 app.get('/dashboard', (req, res) => res.sendFile(path.join(__dirname, 'public', 'dashboard.html')));
