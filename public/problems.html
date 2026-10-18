@@ -29,7 +29,7 @@
         <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div>
                 <h1 class="text-2xl font-black text-white">Master Problem Workspace</h1>
-                <p class="text-xs text-slate-400 mt-1">Track revisions, saved pattern notes, time spent, and completion status</p>
+                <p class="text-xs text-slate-400 mt-1">Track revisions, saved pattern notes, and completion status</p>
             </div>
 
             <!-- TRACK SWITCHER TABS -->
@@ -131,7 +131,6 @@
             if (icon) icon.classList.toggle('rotate-180', expandedRows.has(id));
         }
 
-        // Instant Auto-Save for Status, Revisions, Time, and Notes
         function updateProgress(id, field, value) {
             const prob = problems.find(p => p.id === id);
             if (!prob) return;
@@ -142,7 +141,6 @@
                 prob.solved_date = new Date().toISOString().split('T')[0];
             }
 
-            // Show indicator if notes exist
             if (field === 'pattern_notes') {
                 const indicator = document.getElementById(`note-dot-${id}`);
                 if (indicator) {
@@ -156,7 +154,7 @@
                 body: JSON.stringify({
                     status: prob.status,
                     solved_date: prob.solved_date,
-                    time_min: parseInt(prob.time_min || 0, 10),
+                    time_min: prob.time_min || 0,
                     revisions: parseInt(prob.revisions || 0, 10),
                     pattern_notes: prob.pattern_notes || '',
                     code_snippet: prob.code_snippet || ''
@@ -176,7 +174,7 @@
 
             const tbody = document.getElementById('problems-body');
             if (filtered.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="9" class="p-8 text-center text-slate-500">No problems found for '${currentTrack}' track. Ensure Excel files are seeded.</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="8" class="p-8 text-center text-slate-500">No problems found for '${currentTrack}' track. Ensure Excel files are seeded.</td></tr>`;
                 return;
             }
 
@@ -209,9 +207,6 @@
                         </select>
                     </td>
                     <td class="p-4 text-center" onclick="event.stopPropagation()">
-                        <input type="number" min="0" value="${p.time_min || 0}" onchange="updateProgress(${p.id}, 'time_min', parseInt(this.value, 10))" class="w-14 text-center bg-obsidian-950 border border-obsidian-800 rounded-lg px-1.5 py-1 text-xs font-mono text-cyan-300 outline-none focus:border-emerald-500">
-                    </td>
-                    <td class="p-4 text-center" onclick="event.stopPropagation()">
                         <div class="inline-flex items-center gap-1.5">
                             <input type="number" min="0" max="5" value="${p.revisions || 0}" onchange="updateProgress(${p.id}, 'revisions', Math.min(5, Math.max(0, parseInt(this.value, 10) || 0)))" class="w-12 text-center bg-obsidian-950 border border-obsidian-800 rounded-lg py-1 text-xs font-mono text-emerald-400 font-bold outline-none focus:border-emerald-500">
                             <span class="text-xs text-slate-500 font-mono">/5</span>
@@ -230,7 +225,7 @@
                     </td>
                 </tr>
                 <tr id="expand-row-${p.id}" class="${isExpanded ? '' : 'hidden'} bg-obsidian-900/40 border-b border-obsidian-800">
-                    <td colspan="9" class="p-4" onclick="event.stopPropagation()">
+                    <td colspan="8" class="p-4" onclick="event.stopPropagation()">
                         <div class="glass-card p-4 rounded-2xl space-y-3">
                             <div class="flex items-center justify-between">
                                 <label class="text-[11px] font-bold text-emerald-400 uppercase tracking-wider flex items-center gap-2">
