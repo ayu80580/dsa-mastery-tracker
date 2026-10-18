@@ -114,3 +114,27 @@ window.logout = function () {
         renderNav();
     }
 })();
+
+// 1. EXPOSE GLOBAL FUNCTIONS TO WINDOW
+window.toggleTheme = function () {
+    const isDark = document.documentElement.classList.toggle('dark');
+    localStorage.setItem('dsa_theme', isDark ? 'dark' : 'light');
+    if (window.lucide && typeof lucide.createIcons === 'function') {
+        lucide.createIcons();
+    }
+};
+
+window.logout = function () {
+    localStorage.removeItem('dsa_jwt');
+    window.location.href = '/';
+};
+
+// 2. IMMEDIATE THEME INITIALIZATION (Runs as soon as script loads to prevent white flashes)
+(function initTheme() {
+    const savedTheme = localStorage.getItem('dsa_theme') || 'dark';
+    if (savedTheme === 'dark') {
+        document.documentElement.classList.add('dark');
+    } else {
+        document.documentElement.classList.remove('dark');
+    }
+})();

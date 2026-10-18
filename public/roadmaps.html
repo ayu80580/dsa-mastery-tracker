@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Executive Command HQ | DSA Mastery Engine</title>
+    <!-- TAB LOGO (FAVICON) -->
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2310b981' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'><polygon points='12 2 2 7 12 12 22 7 12 2'/><polyline points='2 17 12 22 22 17'/><polyline points='2 12 12 17 22 12'/></svg>">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
@@ -37,9 +39,20 @@
             <a href="/analytics" class="hover:text-emerald-400 transition">Analytics</a>
             <a href="/ai-coach" class="hover:text-emerald-400 transition">AI Mentor</a>
         </div>
+        <!-- RIGHT ACTION BUTTONS -->
+            <div class="flex items-center gap-3">
+                <!-- THEME SWITCH BUTTON -->
+                <button onclick="toggleTheme()" class="p-2 bg-slate-200 dark:bg-obsidian-900 text-slate-700 dark:text-slate-300 rounded-xl border border-slate-300 dark:border-obsidian-800 hover:scale-105 transition flex items-center justify-center cursor-pointer" title="Toggle Theme">
+                    <!-- Sun Icon (Visible in Dark Mode) -->
+                    <i data-lucide="sun" class="w-4 h-4 text-amber-500 hidden dark:block"></i>
+                    <!-- Moon Icon (Visible in Light Mode) -->
+                    <i data-lucide="moon" class="w-4 h-4 text-indigo-600 block dark:hidden"></i>
+                </button>
 
-        <button onclick="logout()" class="px-3 py-1.5 bg-obsidian-900 text-slate-400 rounded-xl border border-obsidian-800 hover:text-white text-xs">Logout</button>
-    </nav>
+                <!-- LOGOUT BUTTON -->
+                <button onclick="logout()" class="px-3.5 py-1.5 bg-slate-200 dark:bg-obsidian-900 text-slate-700 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white rounded-xl border border-slate-300 dark:border-obsidian-800 text-xs font-bold transition">Logout</button>
+            </div>
+        </nav>
 
     <main class="max-w-7xl mx-auto px-6 py-8 flex-1 w-full space-y-8">
         <div>

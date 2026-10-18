@@ -8,7 +8,7 @@
     <!-- TAB LOGO (FAVICON) -->
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2310b981' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'><polygon points='12 2 2 7 12 12 22 7 12 2'/><polyline points='2 17 12 22 22 17'/><polyline points='2 12 12 17 22 12'/></svg>">
 
-    <!-- PARENT LAYOUT SHELL -->
+    <!-- LAYOUT SHELL -->
     <script src="/js/layout.js"></script>
 
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -26,20 +26,57 @@
 </head>
 <body class="min-h-screen flex flex-col font-sans bg-obsidian-950 text-slate-100">
 
-    <!-- NAVIGATION BAR SHELL -->
-    <nav id="app-nav"></nav>
+    <!-- HARDCODED TOP NAVIGATION BAR -->
+    <nav class="sticky top-0 z-50 glass-card border-b border-slate-200 dark:border-obsidian-800 px-6 py-3.5 flex items-center justify-between transition-colors duration-200">
+        <div class="flex items-center gap-3">
+            <div class="p-2 bg-emerald-500/10 text-emerald-500 rounded-xl border border-emerald-500/20">
+                <i data-lucide="layers" class="w-5 h-5"></i>
+            </div>
+            <span class="font-black text-lg tracking-wide text-slate-900 dark:text-white">DSA ENGINE</span>
+        </div>
+
+        <div class="flex items-center gap-6 text-xs font-bold text-slate-600 dark:text-slate-400">
+            <a href="/dashboard" class="hover:text-emerald-500 transition">Dashboard</a>
+            <a href="/roadmaps" class="hover:text-emerald-500 transition">Roadmaps</a>
+            <a href="/problems" class="text-emerald-500 border-b-2 border-emerald-500 pb-1">Problems</a>
+            <a href="/kanban" class="hover:text-emerald-500 transition">Kanban</a>
+            <a href="/analytics" class="hover:text-emerald-500 transition">Analytics</a>
+            <a href="/ai-coach" class="hover:text-emerald-500 transition">AI Mentor</a>
+        </div>
+
+        <div class="flex items-center gap-3">
+            <!-- Theme Switcher Button -->
+            <button onclick="toggleTheme()" class="p-2 bg-slate-200 dark:bg-obsidian-900 text-slate-700 dark:text-slate-300 rounded-xl border border-slate-300 dark:border-obsidian-800 hover:scale-105 transition flex items-center justify-center cursor-pointer" title="Toggle Theme">
+                <i data-lucide="sun" class="w-4 h-4 text-amber-500 hidden dark:block"></i>
+                <i data-lucide="moon" class="w-4 h-4 text-indigo-600 block dark:hidden"></i>
+            </button>
+        <!-- RIGHT ACTION BUTTONS -->
+            <div class="flex items-center gap-3">
+                <!-- THEME SWITCH BUTTON -->
+                <button onclick="toggleTheme()" class="p-2 bg-slate-200 dark:bg-obsidian-900 text-slate-700 dark:text-slate-300 rounded-xl border border-slate-300 dark:border-obsidian-800 hover:scale-105 transition flex items-center justify-center cursor-pointer" title="Toggle Theme">
+                    <!-- Sun Icon (Visible in Dark Mode) -->
+                    <i data-lucide="sun" class="w-4 h-4 text-amber-500 hidden dark:block"></i>
+                    <!-- Moon Icon (Visible in Light Mode) -->
+                    <i data-lucide="moon" class="w-4 h-4 text-indigo-600 block dark:hidden"></i>
+                </button>
+
+                <!-- LOGOUT BUTTON -->
+                <button onclick="logout()" class="px-3.5 py-1.5 bg-slate-200 dark:bg-obsidian-900 text-slate-700 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white rounded-xl border border-slate-300 dark:border-obsidian-800 text-xs font-bold transition">Logout</button>
+            </div>
+        </div>
+    </nav>
 
     <!-- MAIN WORKSPACE -->
     <main class="max-w-7xl mx-auto px-6 py-8 flex-1 w-full space-y-6">
         
         <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div>
-                <h1 class="text-2xl font-black text-white">Master Problem Workspace</h1>
-                <p class="text-xs text-slate-400 mt-1">Track revisions, saved pattern notes, and completion status</p>
+                <h1 class="text-2xl font-black text-slate-900 dark:text-white">Master Problem Workspace</h1>
+                <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">Track revisions, saved pattern notes, and completion status</p>
             </div>
 
             <!-- TRACK SWITCHER TABS -->
-            <div class="flex items-center gap-2 bg-obsidian-900 p-1.5 rounded-2xl border border-obsidian-800">
+            <div class="flex items-center gap-2 bg-slate-200 dark:bg-obsidian-900 p-1.5 rounded-2xl border border-slate-300 dark:border-obsidian-800">
                 <button onclick="switchTrack('beginner')" id="tab-beginner" class="px-4 py-2 rounded-xl text-xs font-bold transition">Beginner</button>
                 <button onclick="switchTrack('intermediate')" id="tab-intermediate" class="px-4 py-2 rounded-xl text-xs font-bold transition">Intermediate</button>
                 <button onclick="switchTrack('advanced')" id="tab-advanced" class="px-4 py-2 rounded-xl text-xs font-bold transition">Advanced</button>
@@ -49,11 +86,9 @@
         <!-- SEARCH & STATUS FILTER BAR -->
         <div class="flex flex-wrap justify-between items-center gap-4">
             <div class="flex flex-wrap items-center gap-3">
-                <!-- Search Box -->
-                <input type="text" id="search" oninput="renderTable()" placeholder="Search problem, topic, or saved notes..." class="bg-obsidian-900 border border-obsidian-800 text-xs px-4 py-2.5 rounded-xl text-slate-200 outline-none w-72 focus:border-emerald-500">
+                <input type="text" id="search" oninput="renderTable()" placeholder="Search problem, topic, or saved notes..." class="bg-white dark:bg-obsidian-900 border border-slate-300 dark:border-obsidian-800 text-xs px-4 py-2.5 rounded-xl text-slate-900 dark:text-slate-200 outline-none w-72 focus:border-emerald-500">
                 
-                <!-- Status Filter Dropdown -->
-                <select id="status-filter" onchange="renderTable()" class="bg-obsidian-900 border border-obsidian-800 text-xs px-3.5 py-2.5 rounded-xl text-slate-200 outline-none focus:border-emerald-500 font-semibold cursor-pointer">
+                <select id="status-filter" onchange="renderTable()" class="bg-white dark:bg-obsidian-900 border border-slate-300 dark:border-obsidian-800 text-xs px-3.5 py-2.5 rounded-xl text-slate-900 dark:text-slate-200 outline-none focus:border-emerald-500 font-semibold cursor-pointer">
                     <option value="all">All Statuses</option>
                     <option value="Todo">Todo</option>
                     <option value="Hint-solved">Hint-solved</option>
@@ -62,13 +97,13 @@
                 </select>
             </div>
 
-            <span id="problem-count" class="text-xs font-mono text-slate-400">0 Problems</span>
+            <span id="problem-count" class="text-xs font-mono text-slate-500 dark:text-slate-400">0 Problems</span>
         </div>
 
         <!-- MASTER PROBLEMS TABLE -->
-        <div class="glass-card rounded-3xl overflow-hidden border border-obsidian-800">
+        <div class="glass-card rounded-3xl overflow-hidden border border-slate-200 dark:border-obsidian-800">
             <table class="w-full text-left text-xs">
-                <thead class="bg-obsidian-900 text-slate-400 font-bold border-b border-obsidian-800 uppercase">
+                <thead class="bg-slate-100 dark:bg-obsidian-900 text-slate-600 dark:text-slate-400 font-bold border-b border-slate-200 dark:border-obsidian-800 uppercase">
                     <tr>
                         <th class="p-4 w-10 text-center font-mono">#</th>
                         <th class="p-4">Problem Name</th>
@@ -80,7 +115,7 @@
                         <th class="p-4 text-center">Notes</th>
                     </tr>
                 </thead>
-                <tbody id="problems-body" class="divide-y divide-obsidian-800/80"></tbody>
+                <tbody id="problems-body" class="divide-y divide-slate-200 dark:divide-obsidian-800/80"></tbody>
             </table>
         </div>
     </main>
@@ -100,7 +135,7 @@
                     if (t === currentTrack) {
                         btn.className = "px-4 py-2 rounded-xl text-xs font-bold transition bg-emerald-500 text-black shadow-lg shadow-emerald-500/20";
                     } else {
-                        btn.className = "px-4 py-2 rounded-xl text-xs font-bold transition text-slate-400 hover:text-white";
+                        btn.className = "px-4 py-2 rounded-xl text-xs font-bold transition text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white";
                     }
                 }
             });
@@ -209,23 +244,23 @@
                 const hasNotes = p.pattern_notes && p.pattern_notes.trim().length > 0;
 
                 return `
-                <tr class="hover:bg-obsidian-900/50 transition cursor-pointer" onclick="toggleExpand(${p.id})">
-                    <td class="p-4 text-center font-mono text-slate-500">${p.id}</td>
-                    <td class="p-4 font-bold text-white">
+                <tr class="hover:bg-slate-100 dark:hover:bg-obsidian-900/50 transition cursor-pointer" onclick="toggleExpand(${p.id})">
+                    <td class="p-4 text-center font-mono text-slate-400 dark:text-slate-500">${p.id}</td>
+                    <td class="p-4 font-bold text-slate-900 dark:text-white">
                         <div class="flex items-center gap-2">
                             <span>${p.name}</span>
                             <span id="note-dot-${p.id}" class="w-2 h-2 rounded-full bg-emerald-500 shrink-0 ${hasNotes ? '' : 'hidden'}" title="Saved notes exist"></span>
                         </div>
                     </td>
-                    <td class="p-4 text-slate-400">${p.topic}</td>
+                    <td class="p-4 text-slate-600 dark:text-slate-400">${p.topic}</td>
                     <td class="p-4">
                         <span class="px-2 py-0.5 rounded text-[10px] font-bold ${
-                            p.difficulty === 'Easy' ? 'bg-cyan-500/20 text-cyan-300' :
-                            p.difficulty === 'Medium' ? 'bg-amber-500/20 text-amber-300' : 'bg-rose-500/20 text-rose-300'
+                            p.difficulty === 'Easy' ? 'bg-cyan-500/20 text-cyan-600 dark:text-cyan-300' :
+                            p.difficulty === 'Medium' ? 'bg-amber-500/20 text-amber-600 dark:text-amber-300' : 'bg-rose-500/20 text-rose-600 dark:text-rose-300'
                         }">${p.difficulty}</span>
                     </td>
                     <td class="p-4" onclick="event.stopPropagation()">
-                        <select onchange="updateProgress(${p.id}, 'status', this.value)" class="bg-obsidian-950 border border-obsidian-800 rounded-lg px-2.5 py-1 text-slate-200 text-xs outline-none focus:border-emerald-500">
+                        <select onchange="updateProgress(${p.id}, 'status', this.value)" class="bg-white dark:bg-obsidian-950 border border-slate-300 dark:border-obsidian-800 rounded-lg px-2.5 py-1 text-slate-900 dark:text-slate-200 text-xs outline-none focus:border-emerald-500">
                             <option value="Todo" ${p.status === 'Todo' ? 'selected' : ''}>Todo</option>
                             <option value="Hint-solved" ${p.status === 'Hint-solved' ? 'selected' : ''}>Hint-solved</option>
                             <option value="Solved" ${p.status === 'Solved' ? 'selected' : ''}>Solved</option>
@@ -234,39 +269,41 @@
                     </td>
                     <td class="p-4 text-center" onclick="event.stopPropagation()">
                         <div class="inline-flex items-center gap-1.5">
-                            <input type="number" min="0" max="5" value="${p.revisions || 0}" onchange="updateProgress(${p.id}, 'revisions', Math.min(5, Math.max(0, parseInt(this.value, 10) || 0)))" class="w-12 text-center bg-obsidian-950 border border-obsidian-800 rounded-lg py-1 text-xs font-mono text-emerald-400 font-bold outline-none focus:border-emerald-500">
-                            <span class="text-xs text-slate-500 font-mono">/5</span>
+                            <input type="number" min="0" max="5" value="${p.revisions || 0}" onchange="updateProgress(${p.id}, 'revisions', Math.min(5, Math.max(0, parseInt(this.value, 10) || 0)))" class="w-12 text-center bg-white dark:bg-obsidian-950 border border-slate-300 dark:border-obsidian-800 rounded-lg py-1 text-xs font-mono text-emerald-600 dark:text-emerald-400 font-bold outline-none focus:border-emerald-500">
+                            <span class="text-xs text-slate-400 font-mono">/5</span>
                         </div>
                     </td>
                     <td class="p-4 text-center" onclick="event.stopPropagation()">
-                        <a href="${p.url || '#'}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 hover:bg-emerald-500 hover:text-black font-extrabold text-xs transition-all whitespace-nowrap shadow-sm group">
+                        <a href="${p.url || '#'}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500 hover:text-black font-extrabold text-xs transition-all whitespace-nowrap shadow-sm group">
                             <span>Jump</span>
                             <i data-lucide="external-link" class="w-3.5 h-3.5 shrink-0 transition-transform group-hover:translate-x-0.5"></i>
                         </a>
                     </td>
                     <td class="p-4 text-center">
-                        <button onclick="event.stopPropagation(); toggleExpand(${p.id})" class="p-1.5 rounded-lg hover:bg-obsidian-800 text-slate-400 transition" title="Toggle Saved Notes">
+                        <button onclick="event.stopPropagation(); toggleExpand(${p.id})" class="p-1.5 rounded-lg hover:bg-slate-200 dark:hover:bg-obsidian-800 text-slate-400 transition" title="Toggle Saved Notes">
                             <i data-lucide="chevron-down" id="expand-icon-${p.id}" class="w-4 h-4 transition-transform ${isExpanded ? 'rotate-180' : ''}"></i>
                         </button>
                     </td>
                 </tr>
-                <tr id="expand-row-${p.id}" class="${isExpanded ? '' : 'hidden'} bg-obsidian-900/40 border-b border-obsidian-800">
+                <tr id="expand-row-${p.id}" class="${isExpanded ? '' : 'hidden'} bg-slate-50 dark:bg-obsidian-900/40 border-b border-slate-200 dark:border-obsidian-800">
                     <td colspan="8" class="p-4" onclick="event.stopPropagation()">
                         <div class="glass-card p-4 rounded-2xl space-y-3">
                             <div class="flex items-center justify-between">
-                                <label class="text-[11px] font-bold text-emerald-400 uppercase tracking-wider flex items-center gap-2">
+                                <label class="text-[11px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider flex items-center gap-2">
                                     <i data-lucide="file-text" class="w-3.5 h-3.5"></i> Key Logic & Pattern Notes (${p.name})
                                 </label>
                                 <span class="text-[10px] text-slate-400 italic">Auto-saves on typing</span>
                             </div>
-                            <textarea oninput="updateProgress(${p.id}, 'pattern_notes', this.value)" placeholder="Write key problem logic, invariants, or edge-case insights here..." class="w-full bg-obsidian-950 border border-obsidian-800 rounded-xl p-3 text-xs text-slate-200 outline-none focus:border-emerald-500 h-24 transition-colors">${p.pattern_notes || ''}</textarea>
+                            <textarea oninput="updateProgress(${p.id}, 'pattern_notes', this.value)" placeholder="Write key problem logic, invariants, or edge-case insights here..." class="w-full bg-white dark:bg-obsidian-950 border border-slate-300 dark:border-obsidian-800 rounded-xl p-3 text-xs text-slate-900 dark:text-slate-200 outline-none focus:border-emerald-500 h-24 transition-colors">${p.pattern_notes || ''}</textarea>
                         </div>
                     </td>
                 </tr>
                 `;
             }).join('');
 
-            if (window.lucide) lucide.createIcons();
+            if (window.lucide && typeof lucide.createIcons === 'function') {
+                lucide.createIcons();
+            }
         }
 
         loadProblems();
