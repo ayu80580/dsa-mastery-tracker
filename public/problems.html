@@ -3,87 +3,60 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DSA Engine | Master Problems</title>
+    <title>DSA Engine | Master Problems Workspace</title>
 
-    <!-- CUSTOM TAB FAVICON LOGO -->
-    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2310b981' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'><polygon points='12 2 2 7 12 12 22 7 12 2'/><polyline points='2 17 12 22 22 17'/><polyline points='2 12 12 17 22 12'/></svg>">
+    <!-- PARENT LAYOUT SHELL (INJECTS THEME, FAVICON, NAVBAR & STYLES) -->
+    <script src="/js/layout.js"></script>
 
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
-    <script src="/js/layout.js"></script>
     <script>
-        tailwind.config = { darkMode: 'class', theme: { extend: { colors: { obsidian: { 950: '#09090b', 900: '#121215', 800: '#27272a' } } } } }
+        tailwind.config = { darkMode: 'class', theme: { extend: { colors: { obsidian: { 950: '#09090b', 900: '#121215', 850: '#18181b', 800: '#27272a' } } } } };
     </script>
-    <style>
-        body { background: #09090b; color: #f4f4f5; font-family: 'Inter', sans-serif; }
-        .glass-card { background: rgba(24, 24, 27, 0.7); backdrop-filter: blur(16px); border: 1px solid rgba(255, 255, 255, 0.08); }
-    </style>
 </head>
-<body class="min-h-screen flex flex-col">
+<body class="min-h-screen flex flex-col font-sans transition-colors duration-200">
+
+    <!-- AUTOMATICALLY POPULATED PARENT NAVBAR -->
     <nav id="app-nav"></nav>
 
-    <!-- GLOBAL NAVBAR -->
-    <nav class="sticky top-0 z-50 glass-card border-b border-obsidian-800 px-6 py-3.5 flex items-center justify-between">
-        <div class="flex items-center gap-3">
-            <div class="p-2 bg-emerald-500/10 text-emerald-400 rounded-xl border border-emerald-500/20">
-                <i data-lucide="layers" class="w-5 h-5"></i>
-            </div>
-            <span class="font-black text-lg tracking-wide text-white">DSA ENGINE</span>
-        </div>
-
-        <div class="flex items-center gap-6 text-xs font-bold text-slate-400">
-            <a href="/dashboard" class="hover:text-emerald-400 transition">Dashboard</a>
-            <a href="/roadmaps" class="hover:text-emerald-400 transition">Roadmaps</a>
-            <a href="/problems" class="text-emerald-400 border-b-2 border-emerald-400 pb-1">Problems</a>
-            <a href="/kanban" class="hover:text-emerald-400 transition">Kanban</a>
-            <a href="/analytics" class="hover:text-emerald-400 transition">Analytics</a>
-            <a href="/ai-coach" class="hover:text-emerald-400 transition">AI Mentor</a>
-        </div>
-
-        <button onclick="logout()" class="px-3 py-1.5 bg-obsidian-900 text-slate-400 rounded-xl border border-obsidian-800 hover:text-white text-xs font-bold">Logout</button>
-    </nav>
-
-    <!-- MAIN CONTENT -->
+    <!-- MAIN CONTENT AREA -->
     <main class="max-w-7xl mx-auto px-6 py-8 flex-1 w-full space-y-6">
         
-        <!-- HEADER & TRACK SELECTOR TABS -->
         <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div>
-                <h1 class="text-2xl font-black text-white">Master Problem Workspace</h1>
-                <p class="text-xs text-slate-400 mt-1">Select a track level to view problem lists and update status</p>
+                <h1 class="text-2xl font-black text-slate-900 dark:text-white">Master Problem Workspace</h1>
+                <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">Track revisions, pattern notes, time spent, and status per problem</p>
             </div>
 
-            <!-- DEDICATED TRACK SWITCHER TABS -->
-            <div class="flex items-center gap-2 bg-obsidian-900 p-1.5 rounded-2xl border border-obsidian-800">
+            <div class="flex items-center gap-2 bg-slate-200 dark:bg-obsidian-900 p-1.5 rounded-2xl border border-slate-300 dark:border-obsidian-800">
                 <button onclick="switchTrack('beginner')" id="tab-beginner" class="px-4 py-2 rounded-xl text-xs font-bold transition">Beginner</button>
                 <button onclick="switchTrack('intermediate')" id="tab-intermediate" class="px-4 py-2 rounded-xl text-xs font-bold transition">Intermediate</button>
                 <button onclick="switchTrack('advanced')" id="tab-advanced" class="px-4 py-2 rounded-xl text-xs font-bold transition">Advanced</button>
             </div>
         </div>
 
-        <!-- SEARCH BAR -->
-        <div class="flex justify-between items-center">
-            <input type="text" id="search" oninput="renderTable()" placeholder="Search problem or topic..." class="bg-obsidian-900 border border-obsidian-800 text-xs px-4 py-2.5 rounded-xl text-slate-200 outline-none w-72 focus:border-emerald-500">
-            <span id="problem-count" class="text-xs font-mono text-slate-400">0 Problems</span>
+        <div class="flex flex-wrap justify-between items-center gap-4">
+            <input type="text" id="search" oninput="renderTable()" placeholder="Search problem, topic, or notes..." class="bg-white dark:bg-obsidian-900 border border-slate-300 dark:border-obsidian-800 text-xs px-4 py-2.5 rounded-xl text-slate-900 dark:text-slate-200 outline-none w-72 focus:border-emerald-500">
+            <span id="problem-count" class="text-xs font-mono text-slate-500 dark:text-slate-400">0 Problems</span>
         </div>
 
-        <!-- PROBLEMS TABLE -->
-        <div class="glass-card rounded-3xl overflow-hidden border border-obsidian-800">
+        <div class="glass-card rounded-3xl overflow-hidden border border-slate-200 dark:border-obsidian-800">
             <table class="w-full text-left text-xs">
-                <thead class="bg-obsidian-900 text-slate-400 font-bold border-b border-obsidian-800 uppercase">
+                <thead class="bg-slate-100 dark:bg-obsidian-900 text-slate-600 dark:text-slate-400 font-bold border-b border-slate-200 dark:border-obsidian-800 uppercase">
                     <tr>
-                        <th class="p-4 w-12 text-center font-mono">#</th>
+                        <th class="p-4 w-10 text-center font-mono">#</th>
                         <th class="p-4">Problem Name</th>
                         <th class="p-4">Topic</th>
                         <th class="p-4">Difficulty</th>
                         <th class="p-4">Status</th>
-                        <th class="p-4">Time (M)</th>
-                        <th class="p-4">Revisions</th>
+                        <th class="p-4 text-center">Time (M)</th>
+                        <th class="p-4 text-center">Revisions (0-5)</th>
                         <th class="p-4 text-center">LeetCode</th>
+                        <th class="p-4 text-center">Notes</th>
                     </tr>
                 </thead>
-                <tbody id="problems-body" class="divide-y divide-obsidian-800/80"></tbody>
+                <tbody id="problems-body" class="divide-y divide-slate-200 dark:divide-obsidian-800/80"></tbody>
             </table>
         </div>
     </main>
@@ -94,6 +67,7 @@
 
         let problems = [];
         let currentTrack = new URLSearchParams(window.location.search).get('track') || 'beginner';
+        let expandedRows = new Set();
 
         function updateTabHighlight() {
             ['beginner', 'intermediate', 'advanced'].forEach(t => {
@@ -102,7 +76,7 @@
                     if (t === currentTrack) {
                         btn.className = "px-4 py-2 rounded-xl text-xs font-bold transition bg-emerald-500 text-black shadow-lg shadow-emerald-500/20";
                     } else {
-                        btn.className = "px-4 py-2 rounded-xl text-xs font-bold transition text-slate-400 hover:text-white";
+                        btn.className = "px-4 py-2 rounded-xl text-xs font-bold transition text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white";
                     }
                 }
             });
@@ -140,66 +114,124 @@
             });
         }
 
+        function toggleExpand(id) {
+            if (expandedRows.has(id)) {
+                expandedRows.delete(id);
+            } else {
+                expandedRows.add(id);
+            }
+            const row = document.getElementById(`expand-row-${id}`);
+            const icon = document.getElementById(`expand-icon-${id}`);
+            if (row) row.classList.toggle('hidden', !expandedRows.has(id));
+            if (icon) icon.classList.toggle('rotate-180', expandedRows.has(id));
+        }
+
+        function updateProgress(id, field, value) {
+            const prob = problems.find(p => p.id === id);
+            if (!prob) return;
+
+            prob[field] = value;
+
+            if (field === 'status' && (value === 'Solved' || value === 'Mastered') && !prob.solved_date) {
+                prob.solved_date = new Date().toISOString().split('T')[0];
+            }
+
+            fetch(`/api/progress/${id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${jwtToken}` },
+                body: JSON.stringify({
+                    status: prob.status,
+                    solved_date: prob.solved_date,
+                    time_min: parseInt(prob.time_min || 0, 10),
+                    revisions: parseInt(prob.revisions || 0, 10),
+                    pattern_notes: prob.pattern_notes || '',
+                    code_snippet: prob.code_snippet || ''
+                })
+            });
+        }
+
         function renderTable() {
             const query = (document.getElementById('search').value || '').toLowerCase();
             const filtered = Array.isArray(problems) ? problems.filter(p => 
                 (p.name && p.name.toLowerCase().includes(query)) || 
-                (p.topic && p.topic.toLowerCase().includes(query))
+                (p.topic && p.topic.toLowerCase().includes(query)) ||
+                (p.pattern_notes && p.pattern_notes.toLowerCase().includes(query))
             ) : [];
 
             document.getElementById('problem-count').innerText = `${filtered.length} Problems`;
 
             const tbody = document.getElementById('problems-body');
             if (filtered.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="8" class="p-8 text-center text-slate-500">No problems found for '${currentTrack}' track. Ensure Excel files are seeded.</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="9" class="p-8 text-center text-slate-500">No problems found for '${currentTrack}' track. Ensure Excel files are seeded.</td></tr>`;
                 return;
             }
 
-            tbody.innerHTML = filtered.map(p => `
-                <tr class="hover:bg-obsidian-900/50 transition">
-                    <td class="p-4 text-center font-mono text-slate-500">${p.id}</td>
-                    <td class="p-4 font-bold text-white">${p.name}</td>
-                    <td class="p-4 text-slate-400">${p.topic}</td>
+            tbody.innerHTML = filtered.map(p => {
+                const isExpanded = expandedRows.has(p.id);
+                const hasNotes = p.pattern_notes && p.pattern_notes.trim().length > 0;
+
+                return `
+                <tr class="hover:bg-slate-100 dark:hover:bg-obsidian-900/50 transition cursor-pointer" onclick="toggleExpand(${p.id})">
+                    <td class="p-4 text-center font-mono text-slate-400 dark:text-slate-500">${p.id}</td>
+                    <td class="p-4 font-bold text-slate-900 dark:text-white">
+                        <div class="flex items-center gap-2">
+                            <span>${p.name}</span>
+                            ${hasNotes ? `<span class="w-2 h-2 rounded-full bg-emerald-500 shrink-0" title="Saved notes exist"></span>` : ''}
+                        </div>
+                    </td>
+                    <td class="p-4 text-slate-600 dark:text-slate-400">${p.topic}</td>
                     <td class="p-4">
                         <span class="px-2 py-0.5 rounded text-[10px] font-bold ${
-                            p.difficulty === 'Easy' ? 'bg-cyan-500/20 text-cyan-300' :
-                            p.difficulty === 'Medium' ? 'bg-amber-500/20 text-amber-300' : 'bg-rose-500/20 text-rose-300'
+                            p.difficulty === 'Easy' ? 'bg-cyan-500/20 text-cyan-600 dark:text-cyan-300' :
+                            p.difficulty === 'Medium' ? 'bg-amber-500/20 text-amber-600 dark:text-amber-300' : 'bg-rose-500/20 text-rose-600 dark:text-rose-300'
                         }">${p.difficulty}</span>
                     </td>
-                    <td class="p-4">
-                        <select onchange="updateStatus(${p.id}, this.value)" class="bg-obsidian-950 border border-obsidian-800 rounded-lg px-2.5 py-1 text-slate-200 text-xs outline-none">
+                    <td class="p-4" onclick="event.stopPropagation()">
+                        <select onchange="updateProgress(${p.id}, 'status', this.value)" class="bg-white dark:bg-obsidian-950 border border-slate-300 dark:border-obsidian-800 rounded-lg px-2.5 py-1 text-slate-900 dark:text-slate-200 text-xs outline-none focus:border-emerald-500">
                             <option value="Todo" ${p.status === 'Todo' ? 'selected' : ''}>Todo</option>
                             <option value="Hint-solved" ${p.status === 'Hint-solved' ? 'selected' : ''}>Hint-solved</option>
                             <option value="Solved" ${p.status === 'Solved' ? 'selected' : ''}>Solved</option>
                             <option value="Mastered" ${p.status === 'Mastered' ? 'selected' : ''}>Mastered</option>
                         </select>
                     </td>
-                    <td class="p-4 font-mono text-cyan-300">${p.time_min || 0}m</td>
-                    <td class="p-4 font-mono text-emerald-400">${p.revisions || 0}/5</td>
-                    <td class="p-4 text-center">
-                        <a href="${p.url || '#'}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 hover:bg-emerald-500 hover:text-black font-extrabold text-xs transition-all whitespace-nowrap shadow-sm group">
+                    <td class="p-4 text-center" onclick="event.stopPropagation()">
+                        <input type="number" min="0" value="${p.time_min || 0}" onchange="updateProgress(${p.id}, 'time_min', parseInt(this.value, 10))" class="w-14 text-center bg-white dark:bg-obsidian-950 border border-slate-300 dark:border-obsidian-800 rounded-lg px-1.5 py-1 text-xs font-mono text-cyan-600 dark:text-cyan-300 outline-none focus:border-emerald-500">
+                    </td>
+                    <td class="p-4 text-center" onclick="event.stopPropagation()">
+                        <div class="inline-flex items-center gap-1.5">
+                            <input type="number" min="0" max="5" value="${p.revisions || 0}" onchange="updateProgress(${p.id}, 'revisions', Math.min(5, Math.max(0, parseInt(this.value, 10) || 0)))" class="w-12 text-center bg-white dark:bg-obsidian-950 border border-slate-300 dark:border-obsidian-800 rounded-lg py-1 text-xs font-mono text-emerald-600 dark:text-emerald-400 font-bold outline-none focus:border-emerald-500">
+                            <span class="text-xs text-slate-400 font-mono">/5</span>
+                        </div>
+                    </td>
+                    <td class="p-4 text-center" onclick="event.stopPropagation()">
+                        <a href="${p.url || '#'}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500 hover:text-black dark:hover:text-black font-extrabold text-xs transition-all whitespace-nowrap shadow-sm group">
                             <span>Jump</span>
                             <i data-lucide="external-link" class="w-3.5 h-3.5 shrink-0 transition-transform group-hover:translate-x-0.5"></i>
                         </a>
                     </td>
+                    <td class="p-4 text-center">
+                        <button onclick="event.stopPropagation(); toggleExpand(${p.id})" class="p-1.5 rounded-lg hover:bg-slate-200 dark:hover:bg-obsidian-800 text-slate-500 dark:text-slate-400 transition" title="Toggle Notes">
+                            <i data-lucide="chevron-down" id="expand-icon-${p.id}" class="w-4 h-4 transition-transform ${isExpanded ? 'rotate-180' : ''}"></i>
+                        </button>
+                    </td>
                 </tr>
-            `).join('');
+                <tr id="expand-row-${p.id}" class="${isExpanded ? '' : 'hidden'} bg-slate-50 dark:bg-obsidian-900/40 border-b border-slate-200 dark:border-obsidian-800">
+                    <td colspan="9" class="p-4" onclick="event.stopPropagation()">
+                        <div class="glass-card p-4 rounded-2xl space-y-3">
+                            <div class="flex items-center justify-between">
+                                <label class="text-[11px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider flex items-center gap-2">
+                                    <i data-lucide="file-text" class="w-3.5 h-3.5"></i> Key Logic & Pattern Notes (${p.name})
+                                </label>
+                                <span class="text-[10px] text-slate-400 italic">Auto-saves on change</span>
+                            </div>
+                            <textarea onchange="updateProgress(${p.id}, 'pattern_notes', this.value)" placeholder="e.g. Used Two Pointers from opposite ends; invariant is array must be sorted..." class="w-full bg-white dark:bg-obsidian-950 border border-slate-300 dark:border-obsidian-800 rounded-xl p-3 text-xs text-slate-900 dark:text-slate-200 outline-none focus:border-emerald-500 h-24 transition-colors">${p.pattern_notes || ''}</textarea>
+                        </div>
+                    </td>
+                </tr>
+                `;
+            }).join('');
 
-            // Render Lucide icons properly after updating innerHTML
-            lucide.createIcons();
-        }
-
-        function updateStatus(id, status) {
-            fetch(`/api/progress/${id}`, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${jwtToken}` },
-                body: JSON.stringify({ status })
-            });
-        }
-
-        function logout() {
-            localStorage.removeItem('dsa_jwt');
-            window.location.href = '/';
+            if (window.lucide) lucide.createIcons();
         }
 
         loadProblems();
