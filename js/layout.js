@@ -1,8 +1,21 @@
+// 1. EXPOSE GLOBAL FUNCTIONS IMMEDIATELY
+window.toggleTheme = function () {
+    const isDark = document.documentElement.classList.toggle('dark');
+    localStorage.setItem('dsa_theme', isDark ? 'dark' : 'light');
+    if (window.lucide && typeof lucide.createIcons === 'function') {
+        lucide.createIcons();
+    }
+};
+
+window.logout = function () {
+    localStorage.removeItem('dsa_jwt');
+    window.location.href = '/';
+};
+
 (function () {
-    // 1. INJECT FAVICON, FONTS & TAILWIND STYLES TO HEAD
     const head = document.head;
 
-    // Favicon SVG Data URI
+    // 2. INJECT FAVICON DATA URI
     if (!document.querySelector("link[rel*='icon']")) {
         const favicon = document.createElement('link');
         favicon.rel = 'icon';
@@ -11,7 +24,7 @@
         head.appendChild(favicon);
     }
 
-    // Initialize Saved Theme (Prevents White Flashes)
+    // 3. INITIALIZE SAVED THEME INSTANTLY (PREVENTS WHITE FLASH)
     const savedTheme = localStorage.getItem('dsa_theme') || 'dark';
     if (savedTheme === 'dark') {
         document.documentElement.classList.add('dark');
@@ -19,22 +32,25 @@
         document.documentElement.classList.remove('dark');
     }
 
-    // Global Styles (Dark & Light Overrides)
+    // 4. INJECT DUAL THEME STYLES (DARK & LIGHT)
     const style = document.createElement('style');
     style.textContent = `
-        html.dark body { background-color: #09090b; color: #f4f4f5; }
-        html.dark .glass-card { background: rgba(24, 24, 27, 0.75); backdrop-filter: blur(16px); border: 1px solid rgba(255, 255, 255, 0.08); }
-        html:not(.dark) body { background-color: #f8fafc; color: #0f172a; }
-        html:not(.dark) .glass-card { background: rgba(255, 255, 255, 0.9); backdrop-filter: blur(16px); border: 1px solid rgba(226, 232, 240, 0.9); box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05); }
+        html.dark body { background-color: #09090b !important; color: #f4f4f5 !important; }
+        html.dark .glass-card { background: rgba(24, 24, 27, 0.75) !important; backdrop-filter: blur(16px); border-color: rgba(255, 255, 255, 0.08) !important; }
+        html.dark table thead { background-color: #121215 !important; color: #a1a1aa !important; }
+        html.dark table tbody tr:hover { background-color: rgba(18, 18, 21, 0.5) !important; }
+        
+        html:not(.dark) body { background-color: #f8fafc !important; color: #0f172a !important; }
+        html:not(.dark) .glass-card { background: rgba(255, 255, 255, 0.9) !important; backdrop-filter: blur(16px); border-color: rgba(226, 232, 240, 0.9) !important; box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05); }
         html:not(.dark) table thead { background-color: #f1f5f9 !important; color: #475569 !important; }
         html:not(.dark) table tbody tr { border-color: #e2e8f0 !important; }
         html:not(.dark) table tbody tr:hover { background-color: #f1f5f9 !important; }
-        html:not(.dark) select, html:not(.dark) input { background-color: #ffffff !important; color: #0f172a !important; border-color: #cbd5e1 !important; }
+        html:not(.dark) select, html:not(.dark) input, html:not(.dark) textarea { background-color: #ffffff !important; color: #0f172a !important; border-color: #cbd5e1 !important; }
     `;
     head.appendChild(style);
 
-    // 2. RENDER COMMON NAVIGATION BAR ON DOM CONTENT LOAD
-    window.addEventListener('DOMContentLoaded', () => {
+    // 5. SAFE NAVBAR RENDERER (HANDLES DOM READYSTATE RESILIENCE)
+    function renderNav() {
         const navContainer = document.getElementById('app-nav');
         if (!navContainer) return;
 
@@ -52,12 +68,12 @@
         const linksHTML = navLinks.map(link => {
             const isActive = currentPath === link.path || (currentPath === '/' && link.path === '/dashboard');
             const activeClass = isActive 
-                ? 'text-emerald-500 border-b-2 border-emerald-500 pb-1 font-bold' 
-                : 'hover:text-emerald-500 transition font-medium';
+                ? 'text-emerald-500 dark:text-emerald-400 border-b-2 border-emerald-500 dark:border-emerald-400 pb-1 font-bold' 
+                : 'hover:text-emerald-500 dark:hover:text-emerald-400 transition font-medium text-slate-600 dark:text-slate-400';
             return `<a href="${link.path}" class="${activeClass}">${link.name}</a>`;
         }).join('');
 
-        navContainer.className = "sticky top-0 z-50 glass-card border-b border-slate-200 dark:border-obsidian-800 px-6 py-3.5 flex items-center justify-between";
+        navContainer.className = "sticky top-0 z-50 glass-card border-b border-slate-200 dark:border-obsidian-800 px-6 py-3.5 flex items-center justify-between transition-colors duration-200";
         navContainer.innerHTML = `
             <div class="flex items-center gap-3">
                 <div class="p-2 bg-emerald-500/10 text-emerald-500 rounded-xl border border-emerald-500/20">
@@ -66,34 +82,37 @@
                 <span class="font-black text-lg tracking-wide text-slate-900 dark:text-white">DSA ENGINE</span>
             </div>
 
-            <div class="flex items-center gap-6 text-xs text-slate-500 dark:text-slate-400">
+            <div class="flex items-center gap-6 text-xs">
                 ${linksHTML}
             </div>
 
             <div class="flex items-center gap-3">
                 <!-- Theme Switcher Button -->
-                <button onclick="window.toggleTheme()" class="p-2 bg-slate-200 dark:bg-obsidian-900 text-slate-700 dark:text-slate-300 rounded-xl border border-slate-300 dark:border-obsidian-800 hover:scale-105 transition flex items-center justify-center" title="Toggle Mode">
+                <button onclick="window.toggleTheme()" class="p-2 bg-slate-200 dark:bg-obsidian-900 text-slate-700 dark:text-slate-300 rounded-xl border border-slate-300 dark:border-obsidian-800 hover:scale-105 transition flex items-center justify-center cursor-pointer" title="Toggle Mode">
                     <i data-lucide="sun" class="w-4 h-4 text-amber-500 hidden dark:block"></i>
                     <i data-lucide="moon" class="w-4 h-4 text-indigo-600 block dark:hidden"></i>
                 </button>
 
                 <!-- Logout Button -->
-                <button onclick="window.logout()" class="px-3 py-1.5 bg-slate-200 dark:bg-obsidian-900 text-slate-700 dark:text-slate-400 rounded-xl border border-slate-300 dark:border-obsidian-800 hover:text-slate-900 dark:hover:text-white text-xs font-bold">Logout</button>
+                <button onclick="window.logout()" class="px-3.5 py-1.5 bg-slate-200 dark:bg-obsidian-900 text-slate-700 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white rounded-xl border border-slate-300 dark:border-obsidian-800 text-xs font-bold transition">Logout</button>
             </div>
         `;
 
-        if (window.lucide) lucide.createIcons();
-    });
+        // Wait for Lucide CDN script to be available before creating icons
+        const initIcons = () => {
+            if (window.lucide && typeof lucide.createIcons === 'function') {
+                lucide.createIcons();
+            } else {
+                setTimeout(initIcons, 50);
+            }
+        };
+        initIcons();
+    }
+
+    // Run renderNav immediately if DOM is already parsed, otherwise wait for event
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', renderNav);
+    } else {
+        renderNav();
+    }
 })();
-
-// Global Functions Exposed to Window
-window.toggleTheme = function () {
-    const isDark = document.documentElement.classList.toggle('dark');
-    localStorage.setItem('dsa_theme', isDark ? 'dark' : 'light');
-    if (window.lucide) lucide.createIcons();
-};
-
-window.logout = function () {
-    localStorage.removeItem('dsa_jwt');
-    window.location.href = '/';
-};

@@ -11,6 +11,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="/js/layout.js"></script>
     <script>
         tailwind.config = { darkMode: 'class', theme: { extend: { colors: { obsidian: { 950: '#09090b', 900: '#121215', 850: '#18181b', 800: '#27272a' } } } } };
     </script>
@@ -22,7 +23,7 @@
     </style>
 </head>
 <body class="min-h-screen flex flex-col font-sans bg-obsidian-950 text-slate-100">
-
+    <nav id="app-nav"></nav>
     <!-- TOP NAVIGATION BAR -->
     <nav class="sticky top-0 z-50 glass-card border-b border-obsidian-800 px-6 py-3.5 flex items-center justify-between">
         <div class="flex items-center gap-3">
