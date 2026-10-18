@@ -5,6 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>DSA Mastery Engine | AI Coach Dashboard</title>
 
+    <!-- TAB FAVICON LOGO -->
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='22' fill='%2309090b'/><path d='M30 35 L15 50 L30 65' stroke='%2310b981' stroke-width='9' stroke-linecap='round' stroke-linejoin='round' fill='none'/><path d='M70 35 L85 50 L70 65' stroke='%2306b6d4' stroke-width='9' stroke-linecap='round' stroke-linejoin='round' fill='none'/><path d='M58 28 L42 72' stroke='%236366f1' stroke-width='8' stroke-linecap='round' fill='none'/></svg>">
+
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -348,7 +351,7 @@
                     </div>
                     <div>
                         <h2 class="text-base font-extrabold text-white tracking-wide">Master Problem List</h2>
-                        <p class="text-xs text-slate-400">Click problem to open LeetCode, or click row to expand notes</p>
+                        <p class="text-xs text-slate-400">Click problem to open LeetCode, or click row to expand key logic notes</p>
                     </div>
                 </div>
                 <button class="p-2 text-slate-400 hover:text-white rounded-xl bg-obsidian-900 border border-obsidian-800">
@@ -411,6 +414,7 @@
         let problemsData = [];
         let doughnutChartInstance = null;
         let topicChartInstance = null;
+        const expandedRowIds = new Set();
         const SPACING = [1, 3, 7, 21, 60];
 
         if (jwtToken) {
@@ -515,7 +519,7 @@
                 });
         }
 
-      function triggerCoachEmail() {
+        function triggerCoachEmail() {
             apiFetch('/api/coach/send-email', { method: 'POST' }).then(res => {
                 alert(res.message);
             });
@@ -542,6 +546,58 @@
                 renderCharts();
                 updateTopMetrics();
                 loadCoachInsights();
+            });
+        }
+
+        // Dedicated Function to Save Key Logic Notes
+        function saveNotes(problemId, event) {
+            if (event) event.stopPropagation();
+            const textarea = document.getElementById(`note-input-${problemId}`);
+            const statusLabel = document.getElementById(`note-status-${problemId}`);
+            const btn = document.getElementById(`save-btn-${problemId}`);
+            if (!textarea) return;
+
+            const notesText = textarea.value;
+            const prob = problemsData.find(p => p.id === problemId);
+            if (prob) prob.pattern_notes = notesText;
+
+            if (btn) {
+                btn.disabled = true;
+                btn.innerHTML = `<i data-lucide="loader-2" class="w-3.5 h-3.5 animate-spin"></i> <span>Saving...</span>`;
+                lucide.createIcons();
+            }
+            if (statusLabel) {
+                statusLabel.innerText = "Saving to database...";
+                statusLabel.className = "text-xs text-amber-400 font-medium font-mono";
+            }
+
+            apiFetch(`/api/progress/${problemId}/notes`, {
+                method: 'PUT',
+                body: JSON.stringify({ pattern_notes: notesText })
+            }).then(() => {
+                if (statusLabel) {
+                    statusLabel.innerText = "Saved successfully! ✓";
+                    statusLabel.className = "text-xs text-emerald-400 font-medium font-mono";
+                }
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerHTML = `<i data-lucide="check" class="w-3.5 h-3.5"></i> <span>Saved!</span>`;
+                    lucide.createIcons();
+                    setTimeout(() => {
+                        btn.innerHTML = `<i data-lucide="save" class="w-3.5 h-3.5"></i> <span>Save Notes</span>`;
+                        lucide.createIcons();
+                    }, 2000);
+                }
+            }).catch(err => {
+                if (statusLabel) {
+                    statusLabel.innerText = "Error saving notes!";
+                    statusLabel.className = "text-xs text-rose-400 font-medium font-mono";
+                }
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerHTML = `<i data-lucide="save" class="w-3.5 h-3.5"></i> <span>Retry Save</span>`;
+                    lucide.createIcons();
+                }
             });
         }
 
@@ -604,6 +660,7 @@
                 const nextDue = calculateDue(p.solved_date, p.revisions);
                 const diffBadge = p.difficulty === 'Easy' ? 'bg-cyan-500/15 text-cyan-300 border-cyan-500/30' : p.difficulty === 'Medium' ? 'bg-amber-500/15 text-amber-300 border-amber-500/30' : 'bg-rose-500/15 text-rose-300 border-rose-500/30';
                 const priorityBadge = p.priority === 'P1' ? 'bg-orange-500/20 text-orange-400 border-orange-500/30 font-mono' : 'bg-blue-500/15 text-blue-400 border-blue-500/30 font-mono';
+                const isExpanded = expandedRowIds.has(p.id);
 
                 return `
                     <tr class="hover:bg-obsidian-900/60 transition cursor-pointer" onclick="toggleExpand(${p.id})">
@@ -630,15 +687,25 @@
                         </td>
                         <td class="p-4 font-mono text-[11px] ${nextDue === 'Mastered' ? 'text-indigo-400 font-bold' : 'text-amber-400'}">${nextDue}</td>
                         <td class="p-4 text-center text-slate-400">
-                            <i data-lucide="chevron-down" id="expand-icon-${p.id}" class="w-4 h-4 mx-auto transition-transform"></i>
+                            <i data-lucide="chevron-down" id="expand-icon-${p.id}" class="w-4 h-4 mx-auto transition-transform ${isExpanded ? 'rotate-180' : ''}"></i>
                         </td>
                     </tr>
-                    <tr id="expand-row-${p.id}" class="hidden bg-obsidian-900/40 border-b border-obsidian-800">
+                    <tr id="expand-row-${p.id}" class="${isExpanded ? '' : 'hidden'} bg-obsidian-900/40 border-b border-obsidian-800">
                         <td colspan="9" class="p-4">
-                            <div class="flex flex-col md:flex-row gap-4 items-start justify-between bg-obsidian-950 p-4 rounded-2xl border border-obsidian-800">
-                                <div class="flex-1 w-full space-y-2">
-                                    <label class="text-[10px] uppercase font-bold text-emerald-400">Key Logic Notes</label>
-                                    <textarea onchange="updateProgress(${p.id}, 'pattern_notes', this.value)" placeholder="Key insights..." class="w-full bg-obsidian-900 border border-obsidian-800 rounded-xl p-3 text-xs text-slate-200 outline-none focus:border-emerald-500 h-20">${p.pattern_notes || ''}</textarea>
+                            <div class="bg-obsidian-950 p-4 rounded-2xl border border-obsidian-800 space-y-3" onclick="event.stopPropagation()">
+                                <div class="flex items-center justify-between">
+                                    <label class="text-[11px] uppercase font-bold text-emerald-400 flex items-center gap-1.5">
+                                        <i data-lucide="file-text" class="w-3.5 h-3.5"></i>
+                                        Key Logic & Pattern Notes
+                                    </label>
+                                    <span id="note-status-${p.id}" class="text-xs text-slate-400 font-medium"></span>
+                                </div>
+                                <textarea id="note-input-${p.id}" placeholder="Write key approach, edge cases, pattern insights, or time/space complexity notes here..." class="w-full bg-obsidian-900 border border-obsidian-800 rounded-xl p-3 text-xs text-slate-200 outline-none focus:border-emerald-500 h-24 font-mono leading-relaxed transition">${p.pattern_notes || ''}</textarea>
+                                <div class="flex justify-end gap-2">
+                                    <button onclick="saveNotes(${p.id}, event)" id="save-btn-${p.id}" class="px-4 py-2 bg-gradient-to-r from-emerald-500 to-cyan-500 hover:opacity-90 text-black font-extrabold rounded-xl text-xs transition flex items-center gap-1.5 shadow-md shadow-emerald-500/10">
+                                        <i data-lucide="save" class="w-3.5 h-3.5"></i>
+                                        <span>Save Notes</span>
+                                    </button>
                                 </div>
                             </div>
                         </td>
@@ -649,9 +716,15 @@
         }
 
         function toggleExpand(id) {
+            if (expandedRowIds.has(id)) {
+                expandedRowIds.delete(id);
+            } else {
+                expandedRowIds.add(id);
+            }
             const row = document.getElementById(`expand-row-${id}`);
             const icon = document.getElementById(`expand-icon-${id}`);
-            if (row) { row.classList.toggle('hidden'); if (icon) icon.classList.toggle('rotate-180'); }
+            if (row) row.classList.toggle('hidden', !expandedRowIds.has(id));
+            if (icon) icon.classList.toggle('rotate-180', expandedRowIds.has(id));
         }
 
         function allowDrop(e) { e.preventDefault(); }

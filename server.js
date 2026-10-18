@@ -21,7 +21,7 @@ const pool = new Pool({
 
 const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
 
-// Initialize Database Schema with Email Tracking Columns
+// Initialize Database Schema with Email Tracking & Notes Columns
 async function initDb() {
     try {
         await pool.query(`
@@ -58,6 +58,7 @@ async function initDb() {
                 updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 UNIQUE(user_id, problem_id)
             );
+            ALTER TABLE user_progress ADD COLUMN IF NOT EXISTS pattern_notes TEXT;
 
             CREATE TABLE IF NOT EXISTS roadmap (
                 week INT PRIMARY KEY,
@@ -67,7 +68,7 @@ async function initDb() {
                 goal TEXT
             );
         `);
-        console.log('Database schema verified with automated email trigger tracking.');
+        console.log('Database schema verified with key logic notes support.');
     } catch (err) {
         console.error('Database initialization failed:', err);
     }
@@ -143,7 +144,6 @@ async function analyzeUserPerformanceAndAdapt(userId) {
         return d.toISOString().split('T')[0] <= today;
     });
 
-    // Adaptive Recommendation Queue
     let recommendedQueue = [];
     let coachTrackStatus = "On Track";
     let adaptationReason = "Pacing optimal. Advance through core curriculum.";
@@ -159,7 +159,7 @@ async function analyzeUserPerformanceAndAdapt(userId) {
         }
     }
 
-    let aiFeedback = `Completed ${solved.length}/${total} problems. ${adaptationReason}`;
+    let aiFeedback = `Completed ${solved.length}/${total} problems.${adaptationReason}`;
     
     if (process.env.GEMINI_API_KEY) {
         try {
@@ -259,7 +259,7 @@ app.post('/api/auth/login', async (req, res) => {
 
 app.get('/api/auth/me', authenticateToken, (req, res) => res.json({ user: req.user }));
 
-// --- PROGRESS APIS WITH REAL-TIME ADAPTIVE EMAIL AUTO-TRIGGER ---
+// --- PROGRESS & NOTES APIS ---
 app.get('/api/problems', authenticateToken, async (req, res) => {
     try {
         const query = `
@@ -279,9 +279,14 @@ app.get('/api/problems', authenticateToken, async (req, res) => {
     }
 });
 
+// Update status/revisions
 app.put('/api/progress/:problemId', authenticateToken, async (req, res) => {
     try {
-        const { status, solved_date, revisions, pattern_notes } = req.body;
+        const status = req.body.status || 'Todo';
+        const solved_date = req.body.solved_date || null;
+        const revisions = req.body.revisions != null ? req.body.revisions : 0;
+        const pattern_notes = req.body.pattern_notes != null ? req.body.pattern_notes : '';
+
         await pool.query(`
             INSERT INTO user_progress (user_id, problem_id, status, solved_date, revisions, pattern_notes, updated_at)
             VALUES ($1, $2, $3, $4, $5, $6, CURRENT_TIMESTAMP)
@@ -291,20 +296,39 @@ app.put('/api/progress/:problemId', authenticateToken, async (req, res) => {
                 revisions = EXCLUDED.revisions,
                 pattern_notes = EXCLUDED.pattern_notes,
                 updated_at = CURRENT_TIMESTAMP
-        `, [req.user.userId, req.params.problemId, status, solved_date, revisions || 0, pattern_notes]);
+        `, [req.user.userId, req.params.problemId, status, solved_date, revisions, pattern_notes]);
 
-        // Evaluate if this progress update triggered a Track Shift
         const insights = await analyzeUserPerformanceAndAdapt(req.user.userId);
         const userRes = await pool.query(`SELECT name, email, last_track_status FROM users WHERE id = $1`, [req.user.userId]);
         const user = userRes.rows[0];
 
         if (user && insights.summary.trackStatus !== user.last_track_status) {
-            // Track changed! Update user track status and auto-send adaptive email
             await pool.query(`UPDATE users SET last_track_status = $1 WHERE id = $2`, [insights.summary.trackStatus, req.user.userId]);
             sendCoachingEmail(user, insights, true).catch(e => console.error("Auto email trigger error:", e.message));
         }
 
         res.json({ success: true, trackStatus: insights.summary.trackStatus });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Dedicated Notes Endpoint
+app.put('/api/progress/:problemId/notes', authenticateToken, async (req, res) => {
+    try {
+        const { pattern_notes } = req.body;
+        const problemId = parseInt(req.params.problemId);
+        const userId = req.user.userId;
+
+        await pool.query(`
+            INSERT INTO user_progress (user_id, problem_id, status, pattern_notes, updated_at)
+            VALUES ($1, $2, 'Todo', $3, CURRENT_TIMESTAMP)
+            ON CONFLICT (user_id, problem_id) DO UPDATE SET
+                pattern_notes = EXCLUDED.pattern_notes,
+                updated_at = CURRENT_TIMESTAMP
+        `, [userId, problemId, pattern_notes || '']);
+
+        res.json({ success: true, message: 'Notes saved successfully' });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
@@ -364,7 +388,7 @@ app.post('/api/coach/ask', authenticateToken, async (req, res) => {
 
         const insights = await analyzeUserPerformanceAndAdapt(req.user.userId);
         if (!process.env.GEMINI_API_KEY) {
-            return res.json({ answer: "⚠️ GEMINI_API_KEY missing in Render environment variables." });
+            return res.json({ answer: "⚠️ GEMINI_API_KEY missing in environment variables." });
         }
 
         try {
@@ -375,7 +399,7 @@ Provide a clear, encouraging 2-3 sentence response.`;
             const text = await callGeminiAPI(prompt);
             res.json({ answer: text });
         } catch (aiErr) {
-            res.json({ answer: `⚠️ Gemini API Error (${aiErr.message}). Check GEMINI_API_KEY in Render!` });
+            res.json({ answer: `⚠️ Gemini API Error (${aiErr.message}). Check GEMINI_API_KEY!` });
         }
     } catch (err) {
         res.status(500).json({ error: err.message });
@@ -394,14 +418,14 @@ app.post('/api/coach/send-email', authenticateToken, async (req, res) => {
         if (sent) {
             res.json({ success: true, message: `Coaching email sent to ${user.email}!` });
         } else {
-            res.json({ success: false, message: "RESEND_API_KEY missing in Render environment variables." });
+            res.json({ success: false, message: "RESEND_API_KEY missing in environment variables." });
         }
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
 });
 
-// --- AUTOMATED DAILY CRON ENDPOINT (FOR FREE CRON-JOB.ORG PING) ---
+// Automated Cron Endpoints
 app.get('/api/cron/daily-briefing', async (req, res) => {
     const today = new Date().toISOString().split('T')[0];
     try {
@@ -409,7 +433,6 @@ app.get('/api/cron/daily-briefing', async (req, res) => {
         let emailsSent = 0;
 
         for (const user of usersRes.rows) {
-            // Check if user hasn't received today's email briefing
             if (user.last_email_date !== today) {
                 const insights = await analyzeUserPerformanceAndAdapt(user.id);
                 if (insights.revisionsDue.length > 0 || insights.recommendedQueue.length > 0) {
@@ -428,9 +451,7 @@ app.get('/api/cron/daily-briefing', async (req, res) => {
     }
 });
 
-// Internal fallback cron
 cron.schedule('0 8 * * *', async () => {
-    console.log('Running internal daily 8:00 AM cron check...');
     try {
         const today = new Date().toISOString().split('T')[0];
         const usersRes = await pool.query(`SELECT id, name, email, last_email_date FROM users`);
