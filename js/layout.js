@@ -1,4 +1,4 @@
-// 1. EXPOSE GLOBAL FUNCTIONS IMMEDIATELY
+// 1. EXPOSE GLOBAL THEME TOGGLE & LOGOUT FUNCTIONS
 window.toggleTheme = function () {
     const isDark = document.documentElement.classList.toggle('dark');
     localStorage.setItem('dsa_theme', isDark ? 'dark' : 'light');
@@ -24,7 +24,7 @@ window.logout = function () {
         head.appendChild(favicon);
     }
 
-    // 3. INITIALIZE SAVED THEME INSTANTLY (PREVENTS WHITE FLASH)
+    // 3. INITIALIZE SAVED THEME (DEFAULT TO DARK)
     const savedTheme = localStorage.getItem('dsa_theme') || 'dark';
     if (savedTheme === 'dark') {
         document.documentElement.classList.add('dark');
@@ -32,7 +32,7 @@ window.logout = function () {
         document.documentElement.classList.remove('dark');
     }
 
-    // 4. INJECT DUAL THEME STYLES (DARK & LIGHT)
+    // 4. INJECT THEME STYLES (DARK & LIGHT MODE OVERRIDES)
     const style = document.createElement('style');
     style.textContent = `
         html.dark body { background-color: #09090b !important; color: #f4f4f5 !important; }
@@ -49,9 +49,9 @@ window.logout = function () {
     `;
     head.appendChild(style);
 
-    // 5. SAFE NAVBAR RENDERER (HANDLES DOM READYSTATE RESILIENCE)
+    // 5. NAVBAR INJECTION ENGINE (TARGETS #app-nav OR ANY <nav> TAG)
     function renderNav() {
-        const navContainer = document.getElementById('app-nav');
+        const navContainer = document.getElementById('app-nav') || document.querySelector('nav');
         if (!navContainer) return;
 
         const currentPath = window.location.pathname;
@@ -82,13 +82,13 @@ window.logout = function () {
                 <span class="font-black text-lg tracking-wide text-slate-900 dark:text-white">DSA ENGINE</span>
             </div>
 
-            <div class="flex items-center gap-6 text-xs">
+            <div class="flex items-center gap-6 text-xs font-bold">
                 ${linksHTML}
             </div>
 
             <div class="flex items-center gap-3">
                 <!-- Theme Switcher Button -->
-                <button onclick="window.toggleTheme()" class="p-2 bg-slate-200 dark:bg-obsidian-900 text-slate-700 dark:text-slate-300 rounded-xl border border-slate-300 dark:border-obsidian-800 hover:scale-105 transition flex items-center justify-center cursor-pointer" title="Toggle Mode">
+                <button onclick="window.toggleTheme()" class="p-2 bg-slate-200 dark:bg-obsidian-900 text-slate-700 dark:text-slate-300 rounded-xl border border-slate-300 dark:border-obsidian-800 hover:scale-105 transition flex items-center justify-center cursor-pointer" title="Toggle Theme">
                     <i data-lucide="sun" class="w-4 h-4 text-amber-500 hidden dark:block"></i>
                     <i data-lucide="moon" class="w-4 h-4 text-indigo-600 block dark:hidden"></i>
                 </button>
@@ -98,7 +98,6 @@ window.logout = function () {
             </div>
         `;
 
-        // Wait for Lucide CDN script to be available before creating icons
         const initIcons = () => {
             if (window.lucide && typeof lucide.createIcons === 'function') {
                 lucide.createIcons();
@@ -109,7 +108,6 @@ window.logout = function () {
         initIcons();
     }
 
-    // Run renderNav immediately if DOM is already parsed, otherwise wait for event
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', renderNav);
     } else {
