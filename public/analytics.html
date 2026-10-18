@@ -3,15 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Executive Command HQ | DSA Mastery Engine</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <title>Deep Telemetry Analytics | DSA Mastery Engine</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <script>
-        tailwind.config = {
-            darkMode: 'class',
-            theme: { extend: { fontFamily: { sans: ['Inter'], mono: ['"JetBrains Mono"'] }, colors: { obsidian: { 950: '#09090b', 900: '#121215', 850: '#18181b', 800: '#27272a' } } } }
-        }
+        tailwind.config = { darkMode: 'class', theme: { extend: { colors: { obsidian: { 950: '#09090b', 900: '#121215', 800: '#27272a' } } } } }
     </script>
     <style>
         body { background: #09090b; color: #f4f4f5; font-family: 'Inter', sans-serif; }
@@ -20,6 +18,7 @@
 </head>
 <body class="min-h-screen flex flex-col">
 
+    <!-- NAVBAR -->
     <nav class="sticky top-0 z-50 glass-card border-b border-obsidian-800 px-6 py-3.5 flex items-center justify-between">
         <div class="flex items-center gap-3">
             <div class="p-2 bg-emerald-500/10 text-emerald-400 rounded-xl border border-emerald-500/20">
@@ -36,46 +35,144 @@
             <a href="/analytics" class="text-emerald-400 border-b-2 border-emerald-400 pb-1">Analytics</a>
             <a href="/ai-coach" class="hover:text-emerald-400 transition">AI Mentor</a>
         </div>
+
+        <button onclick="logout()" class="px-3.5 py-1.5 bg-obsidian-900 text-slate-400 rounded-xl border border-obsidian-800 hover:text-white text-xs font-bold">Logout</button>
     </nav>
 
+    <!-- MAIN CONTENT -->
     <main class="max-w-7xl mx-auto px-6 py-8 flex-1 w-full space-y-8">
-        <h1 class="text-2xl font-black text-white">Deep Analytics & Topic Breakdown</h1>
+        
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div>
+                <h1 class="text-2xl font-black text-white">Deep Telemetry Analytics</h1>
+                <p class="text-xs text-slate-400 mt-1">Algorithmic weakness radar & topic completion metrics</p>
+            </div>
 
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <div class="glass-card p-6 rounded-3xl space-y-4">
-                <h3 class="text-xs font-bold uppercase text-slate-400">Topic Completion Distribution</h3>
-                <div class="w-full h-64"><canvas id="topicChart"></canvas></div>
-            </div>
-            <div class="glass-card p-6 rounded-3xl space-y-4">
-                <h3 class="text-xs font-bold uppercase text-amber-400">Hint Dependency Weak Spot Radar</h3>
-                <div class="w-full h-64"><canvas id="hintChart"></canvas></div>
-            </div>
+            <!-- Track Filter Selector -->
+            <select id="analytics-track" onchange="loadAnalytics()" class="bg-obsidian-900 border border-obsidian-800 text-xs text-slate-200 font-bold px-3 py-2 rounded-xl outline-none focus:border-emerald-500">
+                <option value="all">All Tracks Aggregated</option>
+                <option value="beginner">Beginner Track</option>
+                <option value="intermediate">Intermediate Track</option>
+                <option value="advanced">Advanced Track</option>
+            </select>
         </div>
+
+        <!-- CHARTS GRID -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            
+            <!-- TOPIC COMPLETION CHART -->
+            <div class="glass-card p-6 rounded-3xl space-y-4">
+                <div class="flex justify-between items-center border-b border-obsidian-800 pb-3">
+                    <h3 class="text-xs font-bold uppercase tracking-wider text-emerald-400 flex items-center gap-2">
+                        <i data-lucide="bar-chart-2" class="w-4 h-4"></i> Topic Completion Distribution
+                    </h3>
+                </div>
+                <div class="w-full h-72">
+                    <canvas id="topicChart"></canvas>
+                </div>
+            </div>
+
+            <!-- HINT DEPENDENCY RADAR CHART -->
+            <div class="glass-card p-6 rounded-3xl space-y-4">
+                <div class="flex justify-between items-center border-b border-obsidian-800 pb-3">
+                    <h3 class="text-xs font-bold uppercase tracking-wider text-amber-400 flex items-center gap-2">
+                        <i data-lucide="radar" class="w-4 h-4"></i> Hint Dependency Weak Spot Radar
+                    </h3>
+                </div>
+                <div class="w-full h-72">
+                    <canvas id="hintChart"></canvas>
+                </div>
+            </div>
+
+        </div>
+
     </main>
 
     <script>
         const jwtToken = localStorage.getItem('dsa_jwt');
+        if (!jwtToken) window.location.href = '/';
 
-        fetch('/api/analytics/deep?track=beginner', { headers: { 'Authorization': `Bearer ${jwtToken}` } })
+        let topicChartInstance = null;
+        let hintChartInstance = null;
+
+        function loadAnalytics() {
+            const track = document.getElementById('analytics-track').value;
+            fetch(`/api/analytics/deep?track=${track}`, {
+                headers: { 'Authorization': `Bearer ${jwtToken}` }
+            })
             .then(r => r.json())
             .then(data => {
-                const topics = data.topics.map(t => t.topic);
-                const solved = data.topics.map(t => t.solved);
-                const hints = data.topics.map(t => t.hint_used);
+                const topics = (data.topics || []).map(t => t.topic);
+                const solved = (data.topics || []).map(t => t.solved);
+                const hints = (data.topics || []).map(t => t.hint_used);
 
-                new Chart(document.getElementById('topicChart'), {
+                // Chart.js Dark Mode Defaults
+                Chart.defaults.color = '#a1a1aa';
+                Chart.defaults.font.family = 'Inter';
+
+                // Render Topic Completion Bar Chart
+                const ctxBar = document.getElementById('topicChart').getContext('2d');
+                if (topicChartInstance) topicChartInstance.destroy();
+
+                topicChartInstance = new Chart(ctxBar, {
                     type: 'bar',
-                    data: { labels: topics, datasets: [{ label: 'Solved', data: solved, backgroundColor: '#10b981' }] },
-                    options: { responsive: true, maintainAspectRatio: false }
+                    data: {
+                        labels: topics.length ? topics : ['No Data'],
+                        datasets: [{
+                            label: 'Solved Problems',
+                            data: solved.length ? solved : [0],
+                            backgroundColor: '#10b981',
+                            borderRadius: 6
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            x: { grid: { display: false }, ticks: { color: '#f4f4f5', font: { size: 10 } } },
+                            y: { grid: { color: 'rgba(255, 255, 255, 0.08)' }, ticks: { color: '#f4f4f5' } }
+                        },
+                        plugins: { legend: { display: false } }
+                    }
                 });
 
-                new Chart(document.getElementById('hintChart'), {
+                // Render Hint Dependency Radar Chart
+                const ctxRadar = document.getElementById('hintChart').getContext('2d');
+                if (hintChartInstance) hintChartInstance.destroy();
+
+                hintChartInstance = new Chart(ctxRadar, {
                     type: 'radar',
-                    data: { labels: topics, datasets: [{ label: 'Hint Reliance', data: hints, backgroundColor: 'rgba(245, 158, 11, 0.2)', borderColor: '#f59e0b' }] },
-                    options: { responsive: true, maintainAspectRatio: false }
+                    data: {
+                        labels: topics.length ? topics : ['No Data'],
+                        datasets: [{
+                            label: 'Hint Reliance',
+                            data: hints.length ? hints : [0],
+                            backgroundColor: 'rgba(245, 158, 11, 0.25)',
+                            borderColor: '#f59e0b',
+                            borderWidth: 2,
+                            pointBackgroundColor: '#f59e0b'
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            r: {
+                                grid: { color: 'rgba(255, 255, 255, 0.1)' },
+                                angleLines: { color: 'rgba(255, 255, 255, 0.1)' },
+                                pointLabels: { color: '#f4f4f5', font: { size: 10, weight: 'bold' } },
+                                ticks: { display: false }
+                            }
+                        },
+                        plugins: { legend: { display: false } }
+                    }
                 });
             });
+        }
 
+        function logout() { localStorage.removeItem('dsa_jwt'); window.location.href = '/'; }
+
+        loadAnalytics();
         lucide.createIcons();
     </script>
 </body>

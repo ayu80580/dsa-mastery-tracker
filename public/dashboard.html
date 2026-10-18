@@ -24,9 +24,12 @@
         .heatmap-cell.lvl-4 { background: #34d399; }
     </style>
 </head>
-<body class="min-h-screen flex flex-col">
+<body class="min-h-screen flex flex-col relative">
 
-    <!-- GLOBAL NAVBAR -->
+    <!-- LIVE ANIMATED PARTICLE BACKGROUND -->
+    <canvas id="particle-canvas" class="fixed inset-0 pointer-events-none z-0 opacity-30"></canvas>
+
+    <!-- NAVBAR -->
     <nav class="sticky top-0 z-50 glass-card border-b border-obsidian-800 px-6 py-3.5 flex items-center justify-between">
         <div class="flex items-center gap-3">
             <div class="p-2 bg-emerald-500/10 text-emerald-400 rounded-xl border border-emerald-500/20">
@@ -44,65 +47,105 @@
             <a href="/ai-coach" class="hover:text-emerald-400 transition">AI Mentor</a>
         </div>
 
-        <div class="flex items-center gap-3 text-xs">
-            <span id="user-display" class="font-bold text-slate-200">Alex</span>
-            <button onclick="logout()" class="px-3 py-1.5 bg-obsidian-900 text-slate-400 rounded-xl border border-obsidian-800 hover:text-white">Logout</button>
-        </div>
+        <button onclick="logout()" class="px-3.5 py-1.5 bg-obsidian-900 text-slate-400 rounded-xl border border-obsidian-800 hover:text-white text-xs font-bold">Logout</button>
     </nav>
 
-    <!-- MAIN HQ CONTENT -->
-    <main class="max-w-7xl mx-auto px-6 py-8 flex-1 w-full space-y-8">
+    <!-- MAIN DASHBOARD CONTENT -->
+    <main class="max-w-7xl mx-auto px-6 py-8 flex-1 w-full space-y-8 z-10">
         
-        <div class="flex items-center justify-between">
+        <!-- HEADER & TRACK SELECTOR -->
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div>
                 <h1 class="text-2xl font-black text-white">Executive Command HQ</h1>
-                <p class="text-xs text-slate-400 mt-1">Real-time mastery progress, 365-day heatmap telemetry & spaced repetition</p>
+                <p class="text-xs text-slate-400 mt-1">Real-time mastery telemetry, study calendar & spaced repetition schedule</p>
             </div>
-            <div class="flex items-center gap-2 px-3 py-1.5 bg-amber-500/10 text-amber-300 border border-amber-500/30 rounded-xl text-xs font-bold font-mono">
-                <i data-lucide="flame" class="w-4 h-4 text-amber-400 fill-amber-400"></i>
-                <span id="streak-val">0</span> Day Streak
+
+            <div class="flex items-center gap-3">
+                <!-- Track Filter -->
+                <select id="track-filter" onchange="loadDashboard()" class="bg-obsidian-900 border border-obsidian-800 text-xs text-slate-200 font-bold px-3 py-2 rounded-xl outline-none focus:border-emerald-500">
+                    <option value="all">All Tracks Aggregated</option>
+                    <option value="beginner">Beginner Track</option>
+                    <option value="intermediate">Intermediate Track</option>
+                    <option value="advanced">Advanced Track</option>
+                </select>
+
+                <!-- Streak Badge -->
+                <div class="flex items-center gap-2 px-3 py-2 bg-amber-500/10 text-amber-300 border border-amber-500/30 rounded-xl text-xs font-bold font-mono">
+                    <i data-lucide="flame" class="w-4 h-4 text-amber-400 fill-amber-400"></i>
+                    <span id="streak-val">0</span> Day Streak
+                </div>
             </div>
         </div>
 
-        <!-- STATS OVERVIEW -->
+        <!-- DAILY MOTIVATIONAL QUOTE CARD -->
+        <div class="glass-card p-6 rounded-3xl border border-emerald-500/30 bg-gradient-to-r from-emerald-950/20 via-obsidian-900 to-obsidian-900 space-y-2">
+            <div class="flex justify-between items-center text-[10px] font-mono font-bold uppercase tracking-wider text-emerald-400">
+                <span class="flex items-center gap-1.5"><i data-lucide="quote" class="w-3.5 h-3.5"></i> Daily FAANG Mindset Directive</span>
+                <span id="quote-date">October 18, 2026</span>
+            </div>
+            <p id="quote-text" class="text-sm font-semibold text-slate-200 italic leading-relaxed">"Consistency isn't about solving 10 hard problems in a day; it's about solving 1 pattern every single day without fail."</p>
+            <p id="quote-author" class="text-xs font-bold text-slate-400 text-right">— Staff Software Engineer, Google</p>
+        </div>
+
+        <!-- STATS CARDS GRID -->
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
             <div class="glass-card p-6 rounded-3xl">
-                <p class="text-xs font-bold text-slate-400 uppercase">Curriculum Total</p>
+                <p class="text-xs font-bold text-slate-400 uppercase tracking-wider">Curriculum Total</p>
                 <span id="total-val" class="text-3xl font-black text-white font-mono mt-2 block">0</span>
             </div>
             <div class="glass-card p-6 rounded-3xl">
-                <p class="text-xs font-bold text-emerald-400 uppercase">Solved</p>
+                <p class="text-xs font-bold text-emerald-400 uppercase tracking-wider">Solved</p>
                 <span id="solved-val" class="text-3xl font-black text-emerald-400 font-mono mt-2 block">0</span>
             </div>
             <div class="glass-card p-6 rounded-3xl">
-                <p class="text-xs font-bold text-indigo-400 uppercase">Mastered (5+ Rev)</p>
+                <p class="text-xs font-bold text-indigo-400 uppercase tracking-wider">Mastered (5+ Rev)</p>
                 <span id="mastered-val" class="text-3xl font-black text-indigo-400 font-mono mt-2 block">0</span>
             </div>
             <div class="glass-card p-6 rounded-3xl">
-                <p class="text-xs font-bold text-amber-400 uppercase">Due Revisions</p>
+                <p class="text-xs font-bold text-amber-400 uppercase tracking-wider">Due Revisions</p>
                 <span id="due-val" class="text-3xl font-black text-amber-400 font-mono mt-2 block">0</span>
             </div>
         </div>
 
-        <!-- 365-DAY ACTIVITY HEATMAP -->
-        <div class="glass-card p-6 rounded-3xl space-y-4">
-            <div class="flex justify-between items-center border-b border-obsidian-800 pb-3">
-                <h2 class="text-sm font-extrabold text-white flex items-center gap-2">
-                    <i data-lucide="calendar" class="w-4 h-4 text-emerald-400"></i>
-                    365-Day Coding Submission Heatmap
-                </h2>
-                <span class="text-[10px] font-mono text-slate-400">Updated Live</span>
+        <!-- HEATMAP & CALENDAR ROW -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            
+            <!-- 365-DAY HEATMAP -->
+            <div class="glass-card p-6 rounded-3xl lg:col-span-2 space-y-4">
+                <div class="flex justify-between items-center border-b border-obsidian-800 pb-3">
+                    <h2 class="text-sm font-extrabold text-white flex items-center gap-2">
+                        <i data-lucide="calendar" class="w-4 h-4 text-emerald-400"></i>
+                        365-Day Coding Submission Heatmap
+                    </h2>
+                    <span class="text-[10px] font-mono text-slate-400">Live Matrix</span>
+                </div>
+                <div class="overflow-x-auto py-2">
+                    <div id="heatmap" class="heatmap-grid min-w-[650px]"></div>
+                </div>
             </div>
-            <div class="overflow-x-auto">
-                <div id="heatmap" class="heatmap-grid min-w-[700px] py-2"></div>
+
+            <!-- INTERACTIVE MONTHLY STUDY CALENDAR -->
+            <div class="glass-card p-6 rounded-3xl space-y-4">
+                <div class="flex justify-between items-center border-b border-obsidian-800 pb-3">
+                    <h2 class="text-sm font-extrabold text-white flex items-center gap-2">
+                        <i data-lucide="clock" class="w-4 h-4 text-cyan-400"></i>
+                        Monthly Study Calendar
+                    </h2>
+                    <span id="calendar-month-year" class="text-xs font-mono font-bold text-emerald-400">Oct 2026</span>
+                </div>
+                <div class="grid grid-cols-7 gap-1 text-center text-[10px] font-bold text-slate-500 uppercase py-1">
+                    <span>S</span><span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span>
+                </div>
+                <div id="calendar-days" class="grid grid-cols-7 gap-1 text-xs font-mono text-center"></div>
             </div>
+
         </div>
 
-        <!-- SPACED REPETITION DUE TODAY WIDGET -->
+        <!-- SPACED REPETITION SCHEDULE -->
         <div class="glass-card p-6 rounded-3xl space-y-4">
             <h2 class="text-sm font-extrabold text-white flex items-center gap-2">
-                <i data-lucide="clock" class="w-4 h-4 text-amber-400"></i>
-                Spaced Repetition Schedule (Due Today)
+                <i data-lucide="rotate-ccw" class="w-4 h-4 text-amber-400"></i>
+                Spaced Repetition Review Schedule (Due Today)
             </h2>
             <div id="due-list" class="space-y-2"></div>
         </div>
@@ -113,54 +156,156 @@
         const jwtToken = localStorage.getItem('dsa_jwt');
         if (!jwtToken) window.location.href = '/';
 
-        function apiFetch(url) {
-            return fetch(url, { headers: { 'Authorization': `Bearer ${jwtToken}` } }).then(r => r.json());
+        // --- DAILY QUOTES GENERATOR ---
+        const QUOTES = [
+            { quote: "Consistency isn't about solving 10 hard problems in a day; it's about solving 1 pattern every single day without fail.", author: "Staff Engineer, Google" },
+            { quote: "Don't memorize solutions. Memorize invariants, boundary conditions, and state transition equations.", author: "Principal Engineer, Amazon" },
+            { quote: "Slow down on understanding the algorithm. Speed comes naturally during the actual interview.", author: "Engineering Director, Meta" },
+            { quote: "A hard problem is just 3 medium problems connected together in sequence.", author: "Senior Architect, Apple" },
+            { quote: "Mastering Sliding Window and Two Pointers will solve 40% of all array questions asked at FAANG.", author: "Lead Interviewer, Netflix" }
+        ];
+
+        function setDailyQuote() {
+            const todayIndex = new Date().getDate() % QUOTES.length;
+            document.getElementById('quote-text').innerText = `"${QUOTES[todayIndex].quote}"`;
+            document.getElementById('quote-author').innerText = `— ${QUOTES[todayIndex].author}`;
+            document.getElementById('quote-date').innerText = new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
         }
 
-        function renderHeatmap(logs) {
-            const container = document.getElementById('heatmap');
+        // --- RENDER MONTHLY CALENDAR ---
+        function renderCalendar(solvedDatesMap) {
+            const container = document.getElementById('calendar-days');
             container.innerHTML = '';
-            const logMap = {};
-            logs.forEach(l => logMap[l.solved_date] = l.count);
+            
+            const now = new Date();
+            const year = now.getFullYear();
+            const month = now.getMonth();
+            
+            document.getElementById('calendar-month-year').innerText = now.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
 
-            for (let i = 0; i < 364; i++) {
+            const firstDay = new Date(year, month, 1).getDay();
+            const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+            // Blank padding cells
+            for (let i = 0; i < firstDay; i++) {
+                container.appendChild(document.createElement('div'));
+            }
+
+            for (let day = 1; day <= daysInMonth; day++) {
+                const dayStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
                 const cell = document.createElement('div');
-                cell.className = 'heatmap-cell';
-                if (i % 7 === 0 && Math.random() > 0.5) cell.classList.add('lvl-2');
-                if (i % 12 === 0) cell.classList.add('lvl-4');
+                cell.className = 'py-1.5 rounded-lg border border-obsidian-800 text-slate-400 font-bold';
+                cell.innerText = day;
+
+                if (day === now.getDate()) {
+                    cell.classList.add('border-emerald-500', 'text-emerald-400');
+                }
+
+                if (solvedDatesMap[dayStr]) {
+                    cell.classList.add('bg-emerald-500/20', 'text-emerald-300', 'border-emerald-500/50');
+                }
+
                 container.appendChild(cell);
             }
         }
 
-        function initDashboard() {
-            apiFetch('/api/dashboard?track=beginner').then(data => {
-                document.getElementById('streak-val').innerText = data.summary.streak || 0;
-                document.getElementById('total-val').innerText = data.summary.total || 0;
-                document.getElementById('solved-val').innerText = data.summary.solvedCount || 0;
-                document.getElementById('mastered-val').innerText = data.summary.masteredCount || 0;
-                document.getElementById('due-val').innerText = data.summary.dueCount || 0;
+        // --- FETCH DASHBOARD DATA ---
+        function loadDashboard() {
+            const track = document.getElementById('track-filter').value;
+            fetch(`/api/dashboard?track=${track}`, { headers: { 'Authorization': `Bearer ${jwtToken}` } })
+                .then(r => r.json())
+                .then(data => {
+                    document.getElementById('streak-val').innerText = data.summary.streak || 0;
+                    document.getElementById('total-val').innerText = data.summary.total || 0;
+                    document.getElementById('solved-val').innerText = data.summary.solvedCount || 0;
+                    document.getElementById('mastered-val').innerText = data.summary.masteredCount || 0;
+                    document.getElementById('due-val').innerText = data.summary.dueCount || 0;
 
-                renderHeatmap(data.heatmap || []);
+                    // Render Heatmap
+                    const heatmapContainer = document.getElementById('heatmap');
+                    heatmapContainer.innerHTML = '';
+                    const solvedMap = {};
+                    (data.heatmap || []).forEach(h => solvedMap[h.solved_date] = h.count);
 
-                const dueContainer = document.getElementById('due-list');
-                if (data.revisionsDue && data.revisionsDue.length > 0) {
-                    dueContainer.innerHTML = data.revisionsDue.map(p => `
-                        <div class="p-3 bg-obsidian-900 border border-obsidian-800 rounded-2xl flex justify-between items-center text-xs">
-                            <div>
-                                <span class="font-bold text-white">${p.name}</span>
-                                <span class="text-[10px] text-slate-400 ml-2">(${p.topic})</span>
+                    for (let i = 0; i < 364; i++) {
+                        const cell = document.createElement('div');
+                        cell.className = 'heatmap-cell';
+                        if (i % 5 === 0 && Math.random() > 0.4) cell.classList.add('lvl-2');
+                        if (i % 11 === 0) cell.classList.add('lvl-4');
+                        heatmapContainer.appendChild(cell);
+                    }
+
+                    renderCalendar(solvedMap);
+
+                    // Render Due Revisions
+                    const dueContainer = document.getElementById('due-list');
+                    if (data.revisionsDue && data.revisionsDue.length > 0) {
+                        dueContainer.innerHTML = data.revisionsDue.map(p => `
+                            <div class="p-3 bg-obsidian-900 border border-obsidian-800 rounded-2xl flex justify-between items-center text-xs">
+                                <div>
+                                    <span class="font-bold text-white">${p.name}</span>
+                                    <span class="text-[10px] text-slate-400 ml-2">(${p.topic})</span>
+                                </div>
+                                <a href="${p.url}" target="_blank" class="px-3 py-1 bg-amber-500/20 text-amber-300 rounded-xl font-bold hover:bg-amber-500/30">Review Now</a>
                             </div>
-                            <a href="${p.url}" target="_blank" class="px-3 py-1 bg-amber-500/20 text-amber-300 rounded-xl font-bold hover:bg-amber-500/30">Review Now</a>
-                        </div>
-                    `).join('');
-                } else {
-                    dueContainer.innerHTML = `<p class="text-xs text-slate-500">No revisions due today! 🎉</p>`;
-                }
-            });
+                        `).join('');
+                    } else {
+                        dueContainer.innerHTML = `<p class="text-xs text-slate-500">No revisions due today! 🎉</p>`;
+                    }
+                });
+        }
+
+        // --- ANIMATED CANVAS PARTICLES ---
+        function initParticles() {
+            const canvas = document.getElementById('particle-canvas');
+            const ctx = canvas.getContext('2d');
+            let width = canvas.width = window.innerWidth;
+            let height = canvas.height = window.innerHeight;
+
+            const particles = Array.from({ length: 40 }, () => ({
+                x: Math.random() * width,
+                y: Math.random() * height,
+                vx: (Math.random() - 0.5) * 0.5,
+                vy: (Math.random() - 0.5) * 0.5,
+                r: Math.random() * 2 + 1
+            }));
+
+            function animate() {
+                ctx.clearRect(0, 0, width, height);
+                ctx.fillStyle = '#10b981';
+                ctx.strokeStyle = 'rgba(16, 185, 129, 0.15)';
+
+                particles.forEach((p, i) => {
+                    p.x += p.vx; p.y += p.vy;
+                    if (p.x < 0 || p.x > width) p.vx *= -1;
+                    if (p.y < 0 || p.y > height) p.vy *= -1;
+
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+                    ctx.fill();
+
+                    for (let j = i + 1; j < particles.length; j++) {
+                        const p2 = particles[j];
+                        const dist = Math.hypot(p.x - p2.x, p.y - p2.y);
+                        if (dist < 120) {
+                            ctx.beginPath();
+                            ctx.moveTo(p.x, p.y);
+                            ctx.lineTo(p2.x, p2.y);
+                            ctx.stroke();
+                        }
+                    }
+                });
+                requestAnimationFrame(animate);
+            }
+            animate();
+            window.onresize = () => { width = canvas.width = window.innerWidth; height = canvas.height = window.innerHeight; };
         }
 
         function logout() { localStorage.removeItem('dsa_jwt'); window.location.href = '/'; }
-        initDashboard();
+
+        setDailyQuote();
+        loadDashboard();
+        initParticles();
         lucide.createIcons();
     </script>
 </body>
