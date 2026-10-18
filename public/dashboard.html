@@ -11,6 +11,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="/js/layout.js"></script>
     <script>
         tailwind.config = {
             darkMode: 'class',
@@ -29,6 +30,7 @@
     </style>
 </head>
 <body class="min-h-screen flex flex-col relative">
+    <nav id="app-nav"></nav>
 
     <canvas id="particle-canvas" class="fixed inset-0 pointer-events-none z-0 opacity-30"></canvas>
 

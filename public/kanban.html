@@ -12,6 +12,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <script src="/js/layout.js"></script>
     <script>
         tailwind.config = { darkMode: 'class', theme: { extend: { colors: { obsidian: { 950: '#09090b', 900: '#121215', 800: '#27272a' } } } } }
     </script>
@@ -22,7 +23,7 @@
     </style>
 </head>
 <body class="min-h-screen flex flex-col relative">
-
+    <nav id="app-nav"></nav>
     <!-- REAL-TIME SYNC LOADER BADGE -->
     <div id="sync-loader" class="fixed bottom-6 right-6 z-50 hidden flex items-center gap-2.5 px-4 py-2.5 bg-emerald-500 text-black font-extrabold text-xs rounded-2xl shadow-xl shadow-emerald-500/20 transition-all duration-300">
         <i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i>

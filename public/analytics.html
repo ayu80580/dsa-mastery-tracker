@@ -11,6 +11,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="/js/layout.js"></script>
     <script>
         tailwind.config = { darkMode: 'class', theme: { extend: { colors: { obsidian: { 950: '#09090b', 900: '#121215', 800: '#27272a' } } } } }
     </script>
@@ -20,7 +21,7 @@
     </style>
 </head>
 <body class="min-h-screen flex flex-col">
-
+    <nav id="app-nav"></nav>
     <!-- GLOBAL NAVBAR -->
     <nav class="sticky top-0 z-50 glass-card border-b border-obsidian-800 px-6 py-3.5 flex items-center justify-between">
         <div class="flex items-center gap-3">
