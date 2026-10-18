@@ -21,7 +21,7 @@ const pool = new Pool({
 
 const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
 
-// Initialize Database Schema with Email Tracking & Notes Columns
+// Initialize Database Schema
 async function initDb() {
     try {
         await pool.query(`
@@ -59,6 +59,7 @@ async function initDb() {
                 UNIQUE(user_id, problem_id)
             );
             ALTER TABLE user_progress ADD COLUMN IF NOT EXISTS pattern_notes TEXT;
+            ALTER TABLE user_progress ADD COLUMN IF NOT EXISTS time_min INT DEFAULT 0;
 
             CREATE TABLE IF NOT EXISTS roadmap (
                 week INT PRIMARY KEY,
@@ -68,7 +69,7 @@ async function initDb() {
                 goal TEXT
             );
         `);
-        console.log('Database schema verified with key logic notes support.');
+        console.log('Database schema initialized with notes, time tracking, and auto-email support.');
     } catch (err) {
         console.error('Database initialization failed:', err);
     }
@@ -116,7 +117,8 @@ async function analyzeUserPerformanceAndAdapt(userId) {
     const progressRes = await pool.query(`
         SELECT p.id, p.name, p.topic, p.difficulty, p.priority, p.url,
                COALESCE(up.status, 'Todo') as status,
-               up.solved_date, COALESCE(up.revisions, 0) as revisions, up.pattern_notes
+               up.solved_date, COALESCE(up.time_min, 0) as time_min,
+               COALESCE(up.revisions, 0) as revisions, up.pattern_notes
         FROM problems p
         LEFT JOIN user_progress up ON p.id = up.problem_id AND up.user_id = $1
         ORDER BY p.id ASC
@@ -144,6 +146,31 @@ async function analyzeUserPerformanceAndAdapt(userId) {
         return d.toISOString().split('T')[0] <= today;
     });
 
+    // Calculate Solving Streak
+    const solvedDates = [...new Set(solved.map(p => p.solved_date).filter(Boolean))].sort().reverse();
+    let streak = 0;
+    if (solvedDates.length > 0) {
+        const todayDate = new Date();
+        const yesterdayDate = new Date();
+        yesterdayDate.setDate(todayDate.getDate() - 1);
+        const tStr = todayDate.toISOString().split('T')[0];
+        const yStr = yesterdayDate.toISOString().split('T')[0];
+
+        if (solvedDates[0] === tStr || solvedDates[0] === yStr) {
+            let curr = new Date(solvedDates[0]);
+            for (const dStr of solvedDates) {
+                const d = new Date(dStr);
+                const diffDays = Math.round((curr - d) / (1000 * 60 * 60 * 24));
+                if (diffDays <= 1) {
+                    streak++;
+                    curr = d;
+                } else {
+                    break;
+                }
+            }
+        }
+    }
+
     let recommendedQueue = [];
     let coachTrackStatus = "On Track";
     let adaptationReason = "Pacing optimal. Advance through core curriculum.";
@@ -159,7 +186,7 @@ async function analyzeUserPerformanceAndAdapt(userId) {
         }
     }
 
-    let aiFeedback = `Completed ${solved.length}/${total} problems.${adaptationReason}`;
+    let aiFeedback = `Completed ${solved.length}/${total} problems. ${adaptationReason}`;
     
     if (process.env.GEMINI_API_KEY) {
         try {
@@ -176,6 +203,7 @@ async function analyzeUserPerformanceAndAdapt(userId) {
             solvedCount: solved.length,
             masteredCount: problems.filter(p => p.revisions >= 5).length,
             dueCount: revisionsDue.length,
+            streak,
             isStrugglingInMedium,
             trackStatus: coachTrackStatus,
             adaptationReason
@@ -259,13 +287,14 @@ app.post('/api/auth/login', async (req, res) => {
 
 app.get('/api/auth/me', authenticateToken, (req, res) => res.json({ user: req.user }));
 
-// --- PROGRESS & NOTES APIS ---
+// --- PROGRESS APIS ---
 app.get('/api/problems', authenticateToken, async (req, res) => {
     try {
         const query = `
             SELECT p.*, 
                    COALESCE(up.status, 'Todo') as status,
                    up.solved_date,
+                   COALESCE(up.time_min, 0) as time_min,
                    COALESCE(up.revisions, 0) as revisions,
                    up.pattern_notes
             FROM problems p
@@ -279,24 +308,25 @@ app.get('/api/problems', authenticateToken, async (req, res) => {
     }
 });
 
-// Update status/revisions
 app.put('/api/progress/:problemId', authenticateToken, async (req, res) => {
     try {
         const status = req.body.status || 'Todo';
         const solved_date = req.body.solved_date || null;
         const revisions = req.body.revisions != null ? req.body.revisions : 0;
+        const time_min = req.body.time_min != null ? req.body.time_min : 0;
         const pattern_notes = req.body.pattern_notes != null ? req.body.pattern_notes : '';
 
         await pool.query(`
-            INSERT INTO user_progress (user_id, problem_id, status, solved_date, revisions, pattern_notes, updated_at)
-            VALUES ($1, $2, $3, $4, $5, $6, CURRENT_TIMESTAMP)
+            INSERT INTO user_progress (user_id, problem_id, status, solved_date, time_min, revisions, pattern_notes, updated_at)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, CURRENT_TIMESTAMP)
             ON CONFLICT (user_id, problem_id) DO UPDATE SET
                 status = EXCLUDED.status,
                 solved_date = EXCLUDED.solved_date,
+                time_min = EXCLUDED.time_min,
                 revisions = EXCLUDED.revisions,
                 pattern_notes = EXCLUDED.pattern_notes,
                 updated_at = CURRENT_TIMESTAMP
-        `, [req.user.userId, req.params.problemId, status, solved_date, revisions, pattern_notes]);
+        `, [req.user.userId, req.params.problemId, status, solved_date, time_min, revisions, pattern_notes]);
 
         const insights = await analyzeUserPerformanceAndAdapt(req.user.userId);
         const userRes = await pool.query(`SELECT name, email, last_track_status FROM users WHERE id = $1`, [req.user.userId]);
@@ -334,6 +364,27 @@ app.put('/api/progress/:problemId/notes', authenticateToken, async (req, res) =>
     }
 });
 
+// Dedicated Time Logging Endpoint
+app.put('/api/progress/:problemId/time', authenticateToken, async (req, res) => {
+    try {
+        const { time_min } = req.body;
+        const problemId = parseInt(req.params.problemId);
+        const userId = req.user.userId;
+
+        await pool.query(`
+            INSERT INTO user_progress (user_id, problem_id, status, time_min, updated_at)
+            VALUES ($1, $2, 'Todo', $3, CURRENT_TIMESTAMP)
+            ON CONFLICT (user_id, problem_id) DO UPDATE SET
+                time_min = EXCLUDED.time_min,
+                updated_at = CURRENT_TIMESTAMP
+        `, [userId, problemId, time_min || 0]);
+
+        res.json({ success: true, message: 'Time logged successfully' });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
 app.get('/api/dashboard', authenticateToken, async (req, res) => {
     try {
         const summaryRes = await pool.query(`
@@ -356,7 +407,13 @@ app.get('/api/dashboard', authenticateToken, async (req, res) => {
             ORDER BY p.topic ASC
         `, [req.user.userId]);
 
-        res.json({ summary: summaryRes.rows[0] || {}, topics: topicsRes.rows || [] });
+        const insights = await analyzeUserPerformanceAndAdapt(req.user.userId);
+
+        res.json({ 
+            summary: summaryRes.rows[0] || {}, 
+            topics: topicsRes.rows || [],
+            streak: insights.summary.streak || 0
+        });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
@@ -418,14 +475,14 @@ app.post('/api/coach/send-email', authenticateToken, async (req, res) => {
         if (sent) {
             res.json({ success: true, message: `Coaching email sent to ${user.email}!` });
         } else {
-            res.json({ success: false, message: "RESEND_API_KEY missing in environment variables." });
+            res.json({ success: false, message: "RESEND_API_KEY missing in Render environment variables." });
         }
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
 });
 
-// Automated Cron Endpoints
+// Automated Daily Cron
 app.get('/api/cron/daily-briefing', async (req, res) => {
     const today = new Date().toISOString().split('T')[0];
     try {

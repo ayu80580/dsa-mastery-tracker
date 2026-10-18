@@ -60,8 +60,17 @@
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
         }
 
-        .glass-card-hover { transition: all 0.2s ease; }
-        .glass-card-hover:hover { border-color: rgba(16, 185, 129, 0.35); box-shadow: 0 12px 30px -10px rgba(16, 185, 129, 0.2); }
+        .glass-card-glow {
+            box-shadow: 0 0 30px rgba(16, 185, 129, 0.12), 0 10px 30px rgba(0, 0, 0, 0.5);
+        }
+
+        .glass-card-hover { transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1); }
+        .glass-card-hover:hover { 
+            border-color: rgba(16, 185, 129, 0.4); 
+            box-shadow: 0 12px 35px -10px rgba(16, 185, 129, 0.25);
+            transform: translateY(-2px);
+        }
+        
         .kanban-column { min-height: 480px; background: rgba(18, 18, 21, 0.6); border: 1px solid rgba(255, 255, 255, 0.05); }
 
         ::-webkit-scrollbar { width: 6px; height: 6px; }
@@ -71,6 +80,21 @@
 </head>
 
 <body class="min-h-screen pb-20 flex flex-col font-sans">
+
+    <!-- FLOATING TOAST CONTAINER -->
+    <div id="toast-container" class="fixed bottom-6 right-6 z-50 flex flex-col gap-3 pointer-events-none"></div>
+
+    <!-- COMMAND PALETTE (CMD+K / CTRL+K) -->
+    <div id="command-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-obsidian-950/80 backdrop-blur-md p-4">
+        <div class="glass-card rounded-3xl w-full max-w-2xl border border-emerald-500/30 shadow-2xl overflow-hidden flex flex-col max-h-[80vh]">
+            <div class="p-4 border-b border-obsidian-800 flex items-center gap-3 bg-obsidian-900/90">
+                <i data-lucide="search" class="w-5 h-5 text-emerald-400"></i>
+                <input type="text" id="cmd-search" oninput="filterCommandPalette()" placeholder="Search problem by name, topic, or key logic pattern..." class="w-full bg-transparent text-sm text-slate-100 outline-none font-medium">
+                <kbd class="px-2 py-1 bg-obsidian-800 border border-obsidian-700 rounded-lg text-[10px] font-mono text-slate-400">ESC</kbd>
+            </div>
+            <div id="cmd-results" class="p-2 overflow-y-auto divide-y divide-obsidian-800/60 max-h-[60vh]"></div>
+        </div>
+    </div>
 
     <!-- AUTH OVERLAY -->
     <div id="auth-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-obsidian-950/95 backdrop-blur-2xl">
@@ -99,7 +123,7 @@
                     <input type="password" id="auth-password" required placeholder="••••••••" class="w-full bg-obsidian-900 border border-obsidian-700 rounded-xl px-4 py-2.5 text-sm text-slate-100 outline-none focus:border-emerald-500">
                 </div>
                 <div id="auth-error" class="text-xs text-rose-400 hidden bg-rose-500/10 border border-rose-500/20 p-2.5 rounded-xl"></div>
-                <button type="submit" id="auth-submit-btn" class="w-full bg-gradient-to-r from-emerald-500 to-cyan-500 text-black font-extrabold py-3 rounded-xl text-sm flex items-center justify-center gap-2">
+                <button type="submit" id="auth-submit-btn" class="w-full bg-gradient-to-r from-emerald-500 to-cyan-500 text-black font-extrabold py-3 rounded-xl text-sm flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/20">
                     <span>Sign In</span>
                     <i data-lucide="arrow-right" class="w-4 h-4"></i>
                 </button>
@@ -117,13 +141,20 @@
     <header class="sticky top-0 z-40 glass-card border-b border-obsidian-800 px-6 py-3.5">
         <div class="max-w-7xl mx-auto flex items-center justify-between">
             <div class="flex items-center gap-3">
-                <div class="p-2.5 bg-emerald-500/10 text-emerald-400 rounded-2xl border border-emerald-500/20">
+                <div class="p-2.5 bg-emerald-500/10 text-emerald-400 rounded-2xl border border-emerald-500/20 shadow-[0_0_15px_rgba(16,185,129,0.2)]">
                     <i data-lucide="sparkles" class="w-5 h-5"></i>
                 </div>
                 <div>
                     <div class="flex items-center gap-2">
                         <h1 class="font-black text-lg tracking-wide text-white">DSA MASTERY</h1>
                         <span class="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">AI COACH ACTIVE</span>
+                        
+                        <!-- STREAK BADGE -->
+                        <div class="hidden sm:flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-gradient-to-r from-amber-500/15 to-orange-500/15 text-amber-300 border border-amber-500/30 text-[11px] font-bold">
+                            <i data-lucide="flame" class="w-3.5 h-3.5 text-amber-400 fill-amber-400"></i>
+                            <span id="header-streak-count">0</span>
+                            <span>Day Streak</span>
+                        </div>
                     </div>
                     <p class="text-xs text-slate-400 flex items-center gap-1.5 mt-0.5">
                         <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
@@ -140,9 +171,16 @@
                 <a href="#sec-table" class="hover:text-emerald-400 transition">Master List</a>
             </div>
 
-            <button onclick="logout()" class="px-3.5 py-2 text-xs font-bold bg-obsidian-900 hover:bg-obsidian-800 text-slate-300 rounded-xl border border-obsidian-800 flex items-center gap-2">
-                <i data-lucide="log-out" class="w-3.5 h-3.5 text-slate-400"></i> Logout
-            </button>
+            <div class="flex items-center gap-3">
+                <button onclick="toggleCommandPalette()" class="hidden sm:flex items-center gap-2 px-3 py-1.5 bg-obsidian-900 hover:bg-obsidian-800 text-slate-400 rounded-xl border border-obsidian-800 text-xs transition">
+                    <i data-lucide="search" class="w-3.5 h-3.5"></i>
+                    <span>Search</span>
+                    <kbd class="px-1.5 py-0.5 bg-obsidian-950 rounded border border-obsidian-700 text-[10px] font-mono text-slate-500">⌘K</kbd>
+                </button>
+                <button onclick="logout()" class="px-3.5 py-2 text-xs font-bold bg-obsidian-900 hover:bg-obsidian-800 text-slate-300 rounded-xl border border-obsidian-800 flex items-center gap-2 transition">
+                    <i data-lucide="log-out" class="w-3.5 h-3.5 text-slate-400"></i> Logout
+                </button>
+            </div>
         </div>
     </header>
 
@@ -150,10 +188,10 @@
     <main class="max-w-7xl mx-auto px-6 mt-8 flex-1 w-full space-y-10">
 
         <!-- SECTION 0: AI COACH COMMAND HUB -->
-        <section id="sec-coach" class="glass-card rounded-3xl p-6 border border-emerald-500/30 bg-gradient-to-r from-emerald-950/20 via-obsidian-900 to-obsidian-900 space-y-6">
+        <section id="sec-coach" class="glass-card glass-card-glow rounded-3xl p-6 border border-emerald-500/30 bg-gradient-to-r from-emerald-950/20 via-obsidian-900 to-obsidian-900 space-y-6">
             <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-obsidian-800 pb-4">
                 <div class="flex items-center gap-3">
-                    <div class="p-3 bg-emerald-500/20 text-emerald-400 rounded-2xl border border-emerald-500/30">
+                    <div class="p-3 bg-emerald-500/20 text-emerald-400 rounded-2xl border border-emerald-500/30 shadow-[0_0_20px_rgba(16,185,129,0.2)]">
                         <i data-lucide="bot" class="w-6 h-6"></i>
                     </div>
                     <div>
@@ -190,7 +228,7 @@
                     </p>
                     <div class="flex gap-2">
                         <input type="text" id="ai-question" placeholder="e.g. How to master sliding window?" class="bg-obsidian-900 border border-obsidian-800 text-xs text-slate-200 rounded-xl px-3 py-2 outline-none w-full focus:border-cyan-500">
-                        <button onclick="askAiCoach()" class="px-3 py-2 bg-cyan-500 text-black font-bold text-xs rounded-xl hover:bg-cyan-400 shrink-0">Ask</button>
+                        <button onclick="askAiCoach()" class="px-3 py-2 bg-cyan-500 text-black font-bold text-xs rounded-xl hover:bg-cyan-400 shrink-0 transition">Ask</button>
                     </div>
                     <p id="ai-answer" class="text-[11px] text-slate-300 hidden bg-obsidian-900 p-2.5 rounded-xl border border-obsidian-800 max-h-24 overflow-y-auto"></p>
                 </div>
@@ -351,7 +389,7 @@
                     </div>
                     <div>
                         <h2 class="text-base font-extrabold text-white tracking-wide">Master Problem List</h2>
-                        <p class="text-xs text-slate-400">Click problem to open LeetCode, or click row to expand key logic notes</p>
+                        <p class="text-xs text-slate-400">Click problem to open LeetCode, or click row to expand stopwatch & key logic notes</p>
                     </div>
                 </div>
                 <button class="p-2 text-slate-400 hover:text-white rounded-xl bg-obsidian-900 border border-obsidian-800">
@@ -360,26 +398,38 @@
             </div>
 
             <div id="body-table" class="space-y-4 pt-2">
-                <div class="flex flex-wrap gap-4 items-center justify-between bg-obsidian-900/80 p-3 rounded-2xl border border-obsidian-800">
-                    <div class="flex items-center gap-3 bg-obsidian-950 border border-obsidian-800 rounded-xl px-4 py-2 flex-1 min-w-[260px]">
-                        <i data-lucide="search" class="w-4 h-4 text-slate-500"></i>
-                        <input type="text" id="search-input" oninput="renderTable()" placeholder="Search problem or pattern..." class="bg-transparent text-xs text-slate-100 outline-none w-full">
+                <!-- SLEEK FILTER PILLS AND SEARCH -->
+                <div class="space-y-3 bg-obsidian-900/80 p-4 rounded-2xl border border-obsidian-800">
+                    <div class="flex flex-wrap gap-4 items-center justify-between">
+                        <div class="flex items-center gap-3 bg-obsidian-950 border border-obsidian-800 rounded-xl px-4 py-2 flex-1 min-w-[260px] focus-within:border-emerald-500/50 transition">
+                            <i data-lucide="search" class="w-4 h-4 text-slate-500"></i>
+                            <input type="text" id="search-input" oninput="renderTable()" placeholder="Search problem, topic, or logic notes..." class="bg-transparent text-xs text-slate-100 outline-none w-full">
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="text-[11px] font-bold text-slate-400 uppercase">Topic:</span>
+                            <select id="filter-topic" onchange="renderTable()" class="bg-obsidian-950 border border-obsidian-800 text-xs rounded-xl px-3 py-2 text-slate-300 outline-none focus:border-emerald-500/50"></select>
+                        </div>
                     </div>
-                    <div class="flex flex-wrap gap-3">
-                        <select id="filter-topic" onchange="renderTable()" class="bg-obsidian-950 border border-obsidian-800 text-xs rounded-xl px-3 py-2 text-slate-300 outline-none"></select>
-                        <select id="filter-status" onchange="renderTable()" class="bg-obsidian-950 border border-obsidian-800 text-xs rounded-xl px-3 py-2 text-slate-300 outline-none">
-                            <option value="ALL">All Statuses</option>
-                            <option value="Todo">Todo</option>
-                            <option value="Hint-solved">Hint-solved</option>
-                            <option value="Solved">Solved</option>
-                            <option value="Mastered">Mastered</option>
-                        </select>
-                        <select id="filter-diff" onchange="renderTable()" class="bg-obsidian-950 border border-obsidian-800 text-xs rounded-xl px-3 py-2 text-slate-300 outline-none">
-                            <option value="ALL">All Difficulties</option>
-                            <option value="Easy">Easy</option>
-                            <option value="Medium">Medium</option>
-                            <option value="Hard">Hard</option>
-                        </select>
+
+                    <!-- Difficulty Filter Chips -->
+                    <div class="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-obsidian-800/60">
+                        <div class="flex items-center gap-1.5 overflow-x-auto">
+                            <span class="text-[11px] font-bold text-slate-400 uppercase mr-1">Difficulty:</span>
+                            <button onclick="setFilterChip('diff', 'ALL')" id="chip-diff-ALL" class="px-3 py-1 rounded-xl text-xs font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 transition">All</button>
+                            <button onclick="setFilterChip('diff', 'Easy')" id="chip-diff-Easy" class="px-3 py-1 rounded-xl text-xs font-bold bg-obsidian-950 text-slate-400 border border-obsidian-800 hover:text-white transition">Easy</button>
+                            <button onclick="setFilterChip('diff', 'Medium')" id="chip-diff-Medium" class="px-3 py-1 rounded-xl text-xs font-bold bg-obsidian-950 text-slate-400 border border-obsidian-800 hover:text-white transition">Medium</button>
+                            <button onclick="setFilterChip('diff', 'Hard')" id="chip-diff-Hard" class="px-3 py-1 rounded-xl text-xs font-bold bg-obsidian-950 text-slate-400 border border-obsidian-800 hover:text-white transition">Hard</button>
+                        </div>
+
+                        <!-- Status Filter Chips -->
+                        <div class="flex items-center gap-1.5 overflow-x-auto">
+                            <span class="text-[11px] font-bold text-slate-400 uppercase mr-1">Status:</span>
+                            <button onclick="setFilterChip('status', 'ALL')" id="chip-status-ALL" class="px-3 py-1 rounded-xl text-xs font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 transition">All</button>
+                            <button onclick="setFilterChip('status', 'Todo')" id="chip-status-Todo" class="px-3 py-1 rounded-xl text-xs font-bold bg-obsidian-950 text-slate-400 border border-obsidian-800 hover:text-white transition">Todo</button>
+                            <button onclick="setFilterChip('status', 'Hint-solved')" id="chip-status-Hint-solved" class="px-3 py-1 rounded-xl text-xs font-bold bg-obsidian-950 text-slate-400 border border-obsidian-800 hover:text-white transition">Hint-Solved</button>
+                            <button onclick="setFilterChip('status', 'Solved')" id="chip-status-Solved" class="px-3 py-1 rounded-xl text-xs font-bold bg-obsidian-950 text-slate-400 border border-obsidian-800 hover:text-white transition">Solved</button>
+                            <button onclick="setFilterChip('status', 'Mastered')" id="chip-status-Mastered" class="px-3 py-1 rounded-xl text-xs font-bold bg-obsidian-950 text-slate-400 border border-obsidian-800 hover:text-white transition">Mastered</button>
+                        </div>
                     </div>
                 </div>
 
@@ -394,6 +444,7 @@
                                     <th class="p-4">Difficulty</th>
                                     <th class="p-4">Priority</th>
                                     <th class="p-4">Status</th>
+                                    <th class="p-4 text-center">Time (m)</th>
                                     <th class="p-4 text-center">Revisions</th>
                                     <th class="p-4">Next Due</th>
                                     <th class="p-4 text-center">Actions</th>
@@ -415,12 +466,36 @@
         let doughnutChartInstance = null;
         let topicChartInstance = null;
         const expandedRowIds = new Set();
+        const activeTimers = {};
         const SPACING = [1, 3, 7, 21, 60];
+
+        let selectedDiffChip = 'ALL';
+        let selectedStatusChip = 'ALL';
 
         if (jwtToken) {
             document.getElementById('auth-modal').classList.add('hidden');
             const cachedUser = localStorage.getItem('dsa_user');
             if (cachedUser) document.getElementById('user-display').innerText = cachedUser;
+        }
+
+        // FLOATING GLASS TOAST SYSTEM
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            const isSuccess = type === 'success';
+            
+            toast.className = `glass-card px-4 py-3 rounded-2xl text-xs font-semibold flex items-center gap-2.5 border transition-all duration-300 transform translate-y-4 opacity-0 pointer-events-auto ${
+                isSuccess ? 'border-emerald-500/40 text-emerald-300 shadow-[0_0_20px_rgba(16,185,129,0.2)]' : 'border-rose-500/40 text-rose-300 shadow-[0_0_20px_rgba(244,63,94,0.2)]'
+            }`;
+            toast.innerHTML = `<i data-lucide="${isSuccess ? 'check-circle-2' : 'alert-circle'}" class="w-4 h-4"></i><span>${message}</span>`;
+            container.appendChild(toast);
+            lucide.createIcons();
+
+            setTimeout(() => toast.classList.remove('translate-y-4', 'opacity-0'), 10);
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'translate-y-2');
+                setTimeout(() => toast.remove(), 300);
+            }, 3200);
         }
 
         function apiFetch(endpoint, options = {}) {
@@ -456,6 +531,7 @@
                         jwtToken = data.token;
                         localStorage.setItem('dsa_jwt', jwtToken);
                         localStorage.setItem('dsa_user', data.user.name);
+                        showToast(`Welcome back, ${data.user.name}!`);
                         initApp();
                     }
                 });
@@ -492,6 +568,9 @@
                 document.getElementById('coach-track-badge').innerText = data.summary.trackStatus;
                 document.getElementById('coach-directive').innerText = data.aiFeedback;
                 document.getElementById('coach-reason').innerText = `Diagnosis: ${data.summary.adaptationReason}`;
+                if (data.summary.streak !== undefined) {
+                    document.getElementById('header-streak-count').innerText = data.summary.streak;
+                }
             });
         }
 
@@ -521,7 +600,7 @@
 
         function triggerCoachEmail() {
             apiFetch('/api/coach/send-email', { method: 'POST' }).then(res => {
-                alert(res.message);
+                showToast(res.message, res.success ? 'success' : 'error');
             });
         }
 
@@ -541,6 +620,7 @@
             }
 
             apiFetch(`/api/progress/${problemId}`, { method: 'PUT', body: JSON.stringify(prob) }).then(() => {
+                showToast(`Updated "${prob.name}"`);
                 renderTable();
                 renderKanban();
                 renderCharts();
@@ -549,7 +629,6 @@
             });
         }
 
-        // Dedicated Function to Save Key Logic Notes
         function saveNotes(problemId, event) {
             if (event) event.stopPropagation();
             const textarea = document.getElementById(`note-input-${problemId}`);
@@ -579,6 +658,7 @@
                     statusLabel.innerText = "Saved successfully! ✓";
                     statusLabel.className = "text-xs text-emerald-400 font-medium font-mono";
                 }
+                showToast(`Notes saved for problem #${problemId}!`);
                 if (btn) {
                     btn.disabled = false;
                     btn.innerHTML = `<i data-lucide="check" class="w-3.5 h-3.5"></i> <span>Saved!</span>`;
@@ -593,6 +673,7 @@
                     statusLabel.innerText = "Error saving notes!";
                     statusLabel.className = "text-xs text-rose-400 font-medium font-mono";
                 }
+                showToast("Failed to save notes", "error");
                 if (btn) {
                     btn.disabled = false;
                     btn.innerHTML = `<i data-lucide="save" class="w-3.5 h-3.5"></i> <span>Retry Save</span>`;
@@ -601,11 +682,89 @@
             });
         }
 
+        function copyNotes(problemId, event) {
+            if (event) event.stopPropagation();
+            const textarea = document.getElementById(`note-input-${problemId}`);
+            if (!textarea || !textarea.value) {
+                showToast("No notes to copy!", "error");
+                return;
+            }
+            navigator.clipboard.writeText(textarea.value).then(() => {
+                showToast("Notes copied to clipboard!");
+            });
+        }
+
+        // STOPWATCH / TIME TRACKER FUNCTIONALITY
+        function toggleTimer(problemId, event) {
+            if (event) event.stopPropagation();
+            const timerBtn = document.getElementById(`timer-btn-${problemId}`);
+            const display = document.getElementById(`timer-display-${problemId}`);
+            
+            if (activeTimers[problemId]) {
+                // STOP TIMER
+                clearInterval(activeTimers[problemId].interval);
+                const elapsedMin = Math.max(1, Math.round(activeTimers[problemId].seconds / 60));
+                delete activeTimers[problemId];
+
+                if (timerBtn) {
+                    timerBtn.className = "px-3 py-1.5 bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 rounded-xl text-xs font-bold flex items-center gap-1.5 hover:bg-emerald-500/30 transition";
+                    timerBtn.innerHTML = `<i data-lucide="play" class="w-3.5 h-3.5"></i> <span>Start Timer</span>`;
+                    lucide.createIcons();
+                }
+
+                const prob = problemsData.find(p => p.id === problemId);
+                const newTotalTime = ((prob && prob.time_min) || 0) + elapsedMin;
+                if (prob) prob.time_min = newTotalTime;
+
+                apiFetch(`/api/progress/${problemId}/time`, {
+                    method: 'PUT',
+                    body: JSON.stringify({ time_min: newTotalTime })
+                }).then(() => {
+                    showToast(`Logged +${elapsedMin} min to problem #${problemId}!`);
+                    renderTable();
+                });
+
+            } else {
+                // START TIMER
+                activeTimers[problemId] = { seconds: 0 };
+                if (timerBtn) {
+                    timerBtn.className = "px-3 py-1.5 bg-rose-500/20 text-rose-300 border border-rose-500/30 rounded-xl text-xs font-bold flex items-center gap-1.5 hover:bg-rose-500/30 transition animate-pulse";
+                    timerBtn.innerHTML = `<i data-lucide="square" class="w-3.5 h-3.5"></i> <span>Stop & Save</span>`;
+                    lucide.createIcons();
+                }
+                activeTimers[problemId].interval = setInterval(() => {
+                    activeTimers[problemId].seconds++;
+                    const s = activeTimers[problemId].seconds;
+                    const mins = String(Math.floor(s / 60)).padStart(2, '0');
+                    const secs = String(s % 60).padStart(2, '0');
+                    if (display) display.innerText = `${mins}:${secs}`;
+                }, 1000);
+            }
+        }
+
         function calculateDue(solvedDate, revisions) {
             if (!solvedDate || revisions >= 5) return revisions >= 5 ? 'Mastered' : 'N/A';
             const d = new Date(solvedDate);
             d.setDate(d.getDate() + SPACING[Math.min(revisions, 4)]);
             return d.toISOString().split('T')[0];
+        }
+
+        // ANIMATED COUNTER ON LOAD
+        function animateValue(id, endValue) {
+            const el = document.getElementById(id);
+            if (!el) return;
+            const startValue = 0;
+            const duration = 700;
+            const startTime = performance.now();
+
+            function update(currentTime) {
+                const elapsed = currentTime - startTime;
+                const progress = Math.min(elapsed / duration, 1);
+                const current = Math.floor(progress * (endValue - startValue) + startValue);
+                el.innerText = id === 'stat-rate' ? current + '%' : current;
+                if (progress < 1) requestAnimationFrame(update);
+            }
+            requestAnimationFrame(update);
         }
 
         function updateTopMetrics() {
@@ -621,11 +780,11 @@
                 return due !== 'Mastered' && due !== 'N/A' && due <= today;
             }).length;
 
-            document.getElementById('stat-total').innerText = total;
-            document.getElementById('stat-solved').innerText = solved;
-            document.getElementById('stat-mastered').innerText = mastered;
-            document.getElementById('stat-due').innerText = dueCount;
-            document.getElementById('stat-rate').innerText = pct + '%';
+            animateValue('stat-total', total);
+            animateValue('stat-solved', solved);
+            animateValue('stat-mastered', mastered);
+            animateValue('stat-due', dueCount);
+            animateValue('stat-rate', pct);
             document.getElementById('stat-solved-bar').style.width = pct + '%';
         }
 
@@ -633,6 +792,35 @@
             const body = document.getElementById(bodyId);
             const icon = document.getElementById(iconId);
             if (body) { body.classList.toggle('hidden'); if (icon) icon.classList.toggle('rotate-180'); }
+        }
+
+        function setFilterChip(category, value) {
+            if (category === 'diff') {
+                ['ALL', 'Easy', 'Medium', 'Hard'].forEach(v => {
+                    const btn = document.getElementById(`chip-diff-${v}`);
+                    if (btn) {
+                        if (v === value) {
+                            btn.className = "px-3 py-1 rounded-xl text-xs font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 transition";
+                        } else {
+                            btn.className = "px-3 py-1 rounded-xl text-xs font-bold bg-obsidian-950 text-slate-400 border border-obsidian-800 hover:text-white transition";
+                        }
+                    }
+                });
+                selectedDiffChip = value;
+            } else if (category === 'status') {
+                ['ALL', 'Todo', 'Hint-solved', 'Solved', 'Mastered'].forEach(v => {
+                    const btn = document.getElementById(`chip-status-${v}`);
+                    if (btn) {
+                        if (v === value) {
+                            btn.className = "px-3 py-1 rounded-xl text-xs font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 transition";
+                        } else {
+                            btn.className = "px-3 py-1 rounded-xl text-xs font-bold bg-obsidian-950 text-slate-400 border border-obsidian-800 hover:text-white transition";
+                        }
+                    }
+                });
+                selectedStatusChip = value;
+            }
+            renderTable();
         }
 
         function populateTopicsFilter() {
@@ -644,14 +832,12 @@
         function renderTable() {
             const search = document.getElementById('search-input').value.toLowerCase();
             const topic = document.getElementById('filter-topic').value;
-            const status = document.getElementById('filter-status').value;
-            const diff = document.getElementById('filter-diff').value;
 
             const filtered = problemsData.filter(p => {
                 const matchSearch = p.name.toLowerCase().includes(search) || (p.pattern_notes && p.pattern_notes.toLowerCase().includes(search));
                 const matchTopic = topic === 'ALL' || p.topic === topic;
-                const matchStatus = status === 'ALL' || p.status === status;
-                const matchDiff = diff === 'ALL' || p.difficulty === diff;
+                const matchStatus = selectedStatusChip === 'ALL' || p.status === selectedStatusChip;
+                const matchDiff = selectedDiffChip === 'ALL' || p.difficulty === selectedDiffChip;
                 return matchSearch && matchTopic && matchStatus && matchDiff;
             });
 
@@ -675,13 +861,14 @@
                         <td class="p-4"><span class="px-2 py-0.5 rounded-md text-[10px] font-bold border ${diffBadge}">${p.difficulty}</span></td>
                         <td class="p-4"><span class="px-2 py-0.5 rounded-md text-[10px] font-bold border ${priorityBadge}">${p.priority}</span></td>
                         <td class="p-4" onclick="event.stopPropagation()">
-                            <select onchange="updateProgress(${p.id}, 'status', this.value)" class="bg-obsidian-950 border border-obsidian-800 rounded-lg px-2 py-1 text-xs text-slate-200 outline-none">
+                            <select onchange="updateProgress(${p.id}, 'status', this.value)" class="bg-obsidian-950 border border-obsidian-800 rounded-lg px-2 py-1 text-xs text-slate-200 outline-none focus:border-emerald-500/50">
                                 <option value="Todo" ${p.status === 'Todo' ? 'selected' : ''}>Todo</option>
                                 <option value="Hint-solved" ${p.status === 'Hint-solved' ? 'selected' : ''}>Hint-solved</option>
                                 <option value="Solved" ${p.status === 'Solved' ? 'selected' : ''}>Solved</option>
                                 <option value="Mastered" ${p.status === 'Mastered' ? 'selected' : ''}>Mastered</option>
                             </select>
                         </td>
+                        <td class="p-4 text-center font-mono text-cyan-300 font-semibold" onclick="event.stopPropagation()">${p.time_min || 0}m</td>
                         <td class="p-4 text-center" onclick="event.stopPropagation()">
                             <input type="number" min="0" max="5" value="${p.revisions || 0}" onchange="updateProgress(${p.id}, 'revisions', parseInt(this.value))" class="w-12 bg-obsidian-950 border border-obsidian-800 rounded-lg text-center py-0.5 text-xs text-emerald-300 font-bold font-mono outline-none">
                         </td>
@@ -691,16 +878,35 @@
                         </td>
                     </tr>
                     <tr id="expand-row-${p.id}" class="${isExpanded ? '' : 'hidden'} bg-obsidian-900/40 border-b border-obsidian-800">
-                        <td colspan="9" class="p-4">
-                            <div class="bg-obsidian-950 p-4 rounded-2xl border border-obsidian-800 space-y-3" onclick="event.stopPropagation()">
-                                <div class="flex items-center justify-between">
-                                    <label class="text-[11px] uppercase font-bold text-emerald-400 flex items-center gap-1.5">
-                                        <i data-lucide="file-text" class="w-3.5 h-3.5"></i>
-                                        Key Logic & Pattern Notes
-                                    </label>
+                        <td colspan="10" class="p-4">
+                            <div class="bg-obsidian-950 p-4 rounded-2xl border border-obsidian-800 space-y-4" onclick="event.stopPropagation()">
+                                <div class="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-obsidian-800/80">
+                                    <div class="flex items-center gap-2">
+                                        <i data-lucide="timer" class="w-4 h-4 text-cyan-400"></i>
+                                        <span class="text-xs font-bold text-slate-300 uppercase">Solving Stopwatch:</span>
+                                        <span id="timer-display-${p.id}" class="font-mono text-sm font-black text-cyan-300 bg-obsidian-900 px-3 py-1 rounded-xl border border-obsidian-800">00:00</span>
+                                        <button id="timer-btn-${p.id}" onclick="toggleTimer(${p.id}, event)" class="px-3 py-1.5 bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 rounded-xl text-xs font-bold flex items-center gap-1.5 hover:bg-emerald-500/30 transition">
+                                            <i data-lucide="play" class="w-3.5 h-3.5"></i>
+                                            <span>Start Timer</span>
+                                        </button>
+                                    </div>
                                     <span id="note-status-${p.id}" class="text-xs text-slate-400 font-medium"></span>
                                 </div>
-                                <textarea id="note-input-${p.id}" placeholder="Write key approach, edge cases, pattern insights, or time/space complexity notes here..." class="w-full bg-obsidian-900 border border-obsidian-800 rounded-xl p-3 text-xs text-slate-200 outline-none focus:border-emerald-500 h-24 font-mono leading-relaxed transition">${p.pattern_notes || ''}</textarea>
+
+                                <div class="space-y-2">
+                                    <div class="flex items-center justify-between">
+                                        <label class="text-[11px] uppercase font-bold text-emerald-400 flex items-center gap-1.5">
+                                            <i data-lucide="file-text" class="w-3.5 h-3.5"></i>
+                                            Key Logic & Pattern Notes
+                                        </label>
+                                        <button onclick="copyNotes(${p.id}, event)" class="text-xs text-slate-400 hover:text-emerald-400 flex items-center gap-1 transition">
+                                            <i data-lucide="copy" class="w-3.5 h-3.5"></i>
+                                            <span>Copy Notes</span>
+                                        </button>
+                                    </div>
+                                    <textarea id="note-input-${p.id}" placeholder="Write key approach, edge cases, pattern insights, or time/space complexity notes here..." class="w-full bg-obsidian-900 border border-obsidian-800 rounded-xl p-3 text-xs text-slate-200 outline-none focus:border-emerald-500 h-24 font-mono leading-relaxed transition">${p.pattern_notes || ''}</textarea>
+                                </div>
+
                                 <div class="flex justify-end gap-2">
                                     <button onclick="saveNotes(${p.id}, event)" id="save-btn-${p.id}" class="px-4 py-2 bg-gradient-to-r from-emerald-500 to-cyan-500 hover:opacity-90 text-black font-extrabold rounded-xl text-xs transition flex items-center gap-1.5 shadow-md shadow-emerald-500/10">
                                         <i data-lucide="save" class="w-3.5 h-3.5"></i>
@@ -741,7 +947,7 @@
                 const list = problemsData.filter(p => p.status === st);
                 document.getElementById(`kanban-count-${columns[st]}`).innerText = list.length;
                 document.getElementById(`kanban-list-${columns[st]}`).innerHTML = list.map(p => `
-                    <div draggable="true" ondragstart="handleDragStart(event, ${p.id})" class="glass-card p-4 rounded-2xl space-y-3 cursor-grab active:cursor-grabbing">
+                    <div draggable="true" ondragstart="handleDragStart(event, ${p.id})" class="glass-card p-4 rounded-2xl space-y-3 cursor-grab active:cursor-grabbing hover:border-emerald-500/30 transition">
                         <div class="flex justify-between items-start gap-2">
                             <a href="${p.url || '#'}" target="_blank" rel="noopener noreferrer" class="font-bold text-xs text-slate-100 hover:text-emerald-400 transition inline-flex items-center gap-1 group">
                                 <span>${p.name}</span>
@@ -808,6 +1014,60 @@
                 }
             });
         }
+
+        // COMMAND PALETTE LOGIC
+        function toggleCommandPalette() {
+            const modal = document.getElementById('command-modal');
+            const searchInput = document.getElementById('cmd-search');
+            modal.classList.toggle('hidden');
+            modal.classList.toggle('flex');
+            if (!modal.classList.contains('hidden')) {
+                searchInput.value = '';
+                filterCommandPalette();
+                setTimeout(() => searchInput.focus(), 50);
+            }
+        }
+
+        function filterCommandPalette() {
+            const query = document.getElementById('cmd-search').value.toLowerCase();
+            const resultsBox = document.getElementById('cmd-results');
+            const matches = problemsData.filter(p => p.name.toLowerCase().includes(query) || p.topic.toLowerCase().includes(query) || (p.pattern_notes && p.pattern_notes.toLowerCase().includes(query))).slice(0, 8);
+
+            resultsBox.innerHTML = matches.map(p => `
+                <div onclick="jumpToProblem(${p.id})" class="p-3 hover:bg-obsidian-800/80 rounded-xl cursor-pointer transition flex items-center justify-between group">
+                    <div class="flex items-center gap-3">
+                        <div class="p-2 bg-emerald-500/10 text-emerald-400 rounded-lg group-hover:bg-emerald-500/20">
+                            <i data-lucide="code-2" class="w-4 h-4"></i>
+                        </div>
+                        <div>
+                            <p class="text-xs font-bold text-slate-100 group-hover:text-emerald-300 transition">${p.name}</p>
+                            <p class="text-[10px] text-slate-400">${p.topic} • ${p.difficulty}</p>
+                        </div>
+                    </div>
+                    <span class="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-obsidian-950 text-slate-400 border border-obsidian-800">${p.status}</span>
+                </div>
+            `).join('') || `<p class="p-4 text-xs text-slate-500 text-center">No matching problems found</p>`;
+            lucide.createIcons();
+        }
+
+        function jumpToProblem(id) {
+            toggleCommandPalette();
+            expandedRowIds.add(id);
+            renderTable();
+            const el = document.getElementById(`expand-row-${id}`);
+            if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+
+        document.addEventListener('keydown', (e) => {
+            if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+                e.preventDefault();
+                toggleCommandPalette();
+            }
+            if (e.key === 'Escape') {
+                const modal = document.getElementById('command-modal');
+                if (!modal.classList.contains('hidden')) toggleCommandPalette();
+            }
+        });
 
         initApp();
         lucide.createIcons();
