@@ -3,41 +3,26 @@ const XLSX = require('xlsx');
 const fs = require('fs');
 const path = require('path');
 
-// Configure PostgreSQL connection pool with explicit SSL settings
 const pool = new Pool({
     connectionString: process.env.DATABASE_URL,
     ssl: process.env.DATABASE_URL ? { rejectUnauthorized: false } : false
 });
 
-// Helper to safely parse numbers without producing NaN
 function safeParseInt(val, fallback = 0) {
     if (val === null || val === undefined) return fallback;
     const parsed = parseInt(val, 10);
     return isNaN(parsed) ? fallback : parsed;
 }
 
-// Determine track slug cleanly from filename
-function getTrackSlugFromFilename(filename) {
-    const lower = filename.toLowerCase();
+// Strict mapping of Excel filenames to track slugs
+const TRACK_MAPPINGS = [
+    { file: 'DSA_Mastery_Tracker.xlsx', track: 'beginner' },
+    { file: 'intermediate.xlsx', track: 'intermediate' },
+    { file: 'advanced.xlsx', track: 'advanced' },
+    { file: 'dp_patterns.xlsx', track: 'dp_mastery' }
+];
 
-    if (lower.includes('intermediate')) {
-        return 'intermediate';
-    }
-    if (lower.includes('advanced') || lower.includes('dp')) {
-        return 'advanced';
-    }
-    if (lower.includes('beginner') || lower.includes('dsamastery') || lower.includes('tracker')) {
-        return 'beginner';
-    }
-
-    return lower
-        .replace(/\.xlsx$/i, '')
-        .replace(/[^a-z0-9]+/g, '-')
-        .replace(/(^-|-$)/g, '');
-}
-
-// Ingest an Excel file safely into the database
-async function seedTierFile(filePath, defaultTrackSlug = 'beginner') {
+async function seedTierFile(filePath, trackSlug) {
     if (!fs.existsSync(filePath)) {
         console.warn(`⚠️ File not found: ${filePath}, skipping...`);
         return 0;
@@ -65,22 +50,12 @@ async function seedTierFile(filePath, defaultTrackSlug = 'beginner') {
         const priority = row[5] ? String(row[5]).trim() : 'P2';
         let url = row[6] ? String(row[6]).trim() : '';
 
-        // Check if track is explicitly set in Excel row
-        let trackLevel = defaultTrackSlug;
-        if (row[7] && String(row[7]).trim().length > 0) {
-            const rawTrack = String(row[7]).toLowerCase().trim();
-            if (rawTrack.includes('intermediate')) trackLevel = 'intermediate';
-            else if (rawTrack.includes('advanced') || rawTrack.includes('dp')) trackLevel = 'advanced';
-            else if (rawTrack.includes('beginner')) trackLevel = 'beginner';
-            else trackLevel = rawTrack;
-        }
-
         if (!url || !url.startsWith('http')) {
             const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
             url = `https://leetcode.com/problems/${slug}/`;
         }
 
-        // Upsert problem safely without manually assigning 'id'
+        // Upsert problem safely without manual primary key collisions
         await pool.query(`
             INSERT INTO problems (week, topic, name, difficulty, priority, url, track_level, track)
             VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
@@ -91,7 +66,7 @@ async function seedTierFile(filePath, defaultTrackSlug = 'beginner') {
                 priority = EXCLUDED.priority,
                 url = EXCLUDED.url,
                 track = EXCLUDED.track;
-        `, [week, topic, name, difficulty, priority, url, trackLevel, trackLevel]);
+        `, [week, topic, name, difficulty, priority, url, trackSlug, trackSlug]);
 
         imported++;
     }
@@ -103,7 +78,6 @@ async function seedAll() {
     console.log('⚡ Initializing & Migrating Database Schema...');
 
     try {
-        // 1. Create base tables if they don't exist
         await pool.query(`
             CREATE TABLE IF NOT EXISTS users (
                 id SERIAL PRIMARY KEY,
@@ -141,7 +115,7 @@ async function seedAll() {
             );
         `);
 
-        // 2. Attach auto-increment sequence to 'problems.id' if pre-existing table lacks SERIAL
+        // Attach auto-increment sequence to problems.id if missing
         await pool.query(`
             CREATE SEQUENCE IF NOT EXISTS problems_id_seq;
             ALTER TABLE problems ALTER COLUMN id SET DEFAULT nextval('problems_id_seq');
@@ -149,20 +123,18 @@ async function seedAll() {
             SELECT setval('problems_id_seq', COALESCE((SELECT MAX(id) FROM problems), 0) + 1, false);
         `);
 
-        // 3. Explicitly alter pre-existing tables to add any missing columns safely
+        // Align schema columns
         await pool.query(`
             ALTER TABLE problems ADD COLUMN IF NOT EXISTS url TEXT;
             ALTER TABLE problems ADD COLUMN IF NOT EXISTS track_level TEXT DEFAULT 'beginner';
             ALTER TABLE problems ADD COLUMN IF NOT EXISTS track TEXT DEFAULT 'beginner';
             ALTER TABLE users ADD COLUMN IF NOT EXISTS tier_access TEXT DEFAULT 'pro';
-            ALTER TABLE users ADD COLUMN IF NOT EXISTS last_track_status TEXT;
-            ALTER TABLE users ADD COLUMN IF NOT EXISTS last_email_date TEXT;
             ALTER TABLE user_progress ADD COLUMN IF NOT EXISTS pattern_notes TEXT;
             ALTER TABLE user_progress ADD COLUMN IF NOT EXISTS code_snippet TEXT;
             ALTER TABLE user_progress ADD COLUMN IF NOT EXISTS time_min INT DEFAULT 0;
         `);
 
-        // 4. Ensure unique constraint exists on problems (name, track_level)
+        // Ensure unique constraint exists on (name, track_level)
         await pool.query(`
             DO $$
             BEGIN
@@ -174,17 +146,15 @@ async function seedAll() {
             END $$;
         `);
 
-        // 5. Scan directory for all .xlsx files
-        const rootFiles = fs.readdirSync(__dirname).filter(f => f.endsWith('.xlsx') && !f.startsWith('~$'));
-
-        for (const file of rootFiles) {
-            const trackSlug = getTrackSlugFromFilename(file);
-            console.log(`⚡ Seeding track '${trackSlug}' from ${file}...`);
-            const count = await seedTierFile(path.join(__dirname, file), trackSlug);
-            console.log(`✅ Successfully seeded ${count} problems for '${trackSlug}'.`);
+        // Process each mapped Excel track file
+        for (const target of TRACK_MAPPINGS) {
+            const filePath = path.join(__dirname, target.file);
+            console.log(`⚡ Seeding track '${target.track}' from ${target.file}...`);
+            const count = await seedTierFile(filePath, target.track);
+            console.log(`✅ Successfully seeded ${count} problems for '${target.track}'.`);
         }
 
-        console.log('🎉 Seeding process completed successfully!');
+        console.log('🎉 All 4 tracks seeded successfully!');
     } catch (err) {
         console.error('❌ Seeding Error:', err);
         process.exit(1);

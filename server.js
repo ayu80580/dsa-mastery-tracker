@@ -11,7 +11,7 @@ const JWT_SECRET = process.env.JWT_SECRET || 'dsa_mastery_secret_key_2026';
 
 app.use(cors());
 app.use(express.json({ limit: '20mb' }));
-app.use(express.static('public'));
+app.use(express.static(path.join(__dirname, 'public')));
 
 const pool = new Pool({
     connectionString: process.env.DATABASE_URL,
@@ -36,7 +36,7 @@ async function callGeminiAPI(promptText) {
     const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey) throw new Error("GEMINI_API_KEY missing");
     const genAI = new GoogleGenerativeAI(apiKey);
-    const candidateModels = ["gemini-3.8-flash", "gemini-3.6-flash", "gemini-3.5-flash-lite"];
+    const candidateModels = ["gemini-3.8-flash", "gemini-3.6-flash", "gemini-3.5-flash-lite", "gemini-1.5-flash"];
 
     for (const modelName of candidateModels) {
         try {
@@ -56,13 +56,13 @@ async function callGeminiAPI(promptText) {
 app.get('/api/dashboard', authenticateToken, async (req, res) => {
     try {
         const track = (req.query.track || 'all').toLowerCase().trim();
-        const userId = req.user.userId;
+        const userId = req.user.userId || req.user.id;
 
         let whereClause = '';
         let queryParams = [userId];
 
         if (track !== 'all') {
-            whereClause = 'WHERE LOWER(COALESCE(p.track_level, \'beginner\')) = $2';
+            whereClause = 'WHERE LOWER(COALESCE(p.track_level, p.track, \'beginner\')) = $2';
             queryParams.push(track);
         }
 
@@ -87,7 +87,7 @@ app.get('/api/dashboard', authenticateToken, async (req, res) => {
             FROM problems p
             JOIN user_progress up ON p.id = up.problem_id AND up.user_id = $1
             WHERE up.solved_date IS NOT NULL AND up.revisions < 5
-            ${track !== 'all' ? 'AND LOWER(COALESCE(p.track_level, \'beginner\')) = $2' : ''}
+            ${track !== 'all' ? 'AND LOWER(COALESCE(p.track_level, p.track, \'beginner\')) = $2' : ''}
             ORDER BY up.solved_date ASC
         `, queryParams);
 
@@ -137,18 +137,24 @@ app.get('/api/dashboard', authenticateToken, async (req, res) => {
 // --- 2. MASTER PROBLEMS API ---
 app.get('/api/problems', authenticateToken, async (req, res) => {
     try {
+        const userId = req.user.userId || req.user.id;
         const trackLevel = (req.query.track || 'all').toLowerCase().trim();
+
         let query = `
-            SELECT p.*, COALESCE(up.status, 'Todo') as status, up.solved_date,
-                   COALESCE(up.time_min, 0) as time_min, COALESCE(up.revisions, 0) as revisions,
+            SELECT p.id, p.name, p.topic, p.difficulty, p.url,
+                   COALESCE(p.track_level, p.track) as track,
+                   COALESCE(up.status, 'Todo') as status, 
+                   up.solved_date,
+                   COALESCE(up.time_min, 0) as time_min, 
+                   COALESCE(up.revisions, 0) as revisions,
                    up.pattern_notes, up.code_snippet
             FROM problems p
             LEFT JOIN user_progress up ON p.id = up.problem_id AND up.user_id = $1
         `;
-        const params = [req.user.userId];
+        const params = [userId];
 
         if (trackLevel !== 'all') {
-            query += ` WHERE LOWER(COALESCE(p.track_level, 'beginner')) = $2`;
+            query += ` WHERE LOWER(COALESCE(p.track_level, p.track, 'beginner')) = $2`;
             params.push(trackLevel);
         }
 
@@ -165,13 +171,13 @@ app.get('/api/problems', authenticateToken, async (req, res) => {
 const handleAnalytics = async (req, res) => {
     try {
         const track = (req.query.track || 'all').toLowerCase().trim();
-        const userId = req.user.userId;
+        const userId = req.user.userId || req.user.id;
 
         let whereClause = '';
         let queryParams = [userId];
 
         if (track !== 'all') {
-            whereClause = 'WHERE LOWER(COALESCE(p.track_level, \'beginner\')) = $2';
+            whereClause = 'WHERE LOWER(COALESCE(p.track_level, p.track, \'beginner\')) = $2';
             queryParams.push(track);
         }
 
@@ -216,18 +222,20 @@ app.get('/api/analytics/deep', authenticateToken, handleAnalytics);
 app.get('/api/tracks/status', authenticateToken, async (req, res) => {
     try {
         const countsRes = await pool.query(`
-            SELECT COALESCE(track_level, 'beginner') as track_level, COUNT(*)::int as count 
-            FROM problems GROUP BY COALESCE(track_level, 'beginner')
+            SELECT COALESCE(track_level, track, 'beginner') as track_level, COUNT(*)::int as count 
+            FROM problems 
+            GROUP BY COALESCE(track_level, track, 'beginner')
         `);
 
-        const counts = { beginner: 0, intermediate: 0, advanced: 0 };
+        const counts = { beginner: 0, intermediate: 0, advanced: 0, dp_mastery: 0 };
         countsRes.rows.forEach(r => { counts[r.track_level] = r.count; });
 
         res.json({
             tracks: {
                 beginner: { name: 'Beginner Roadmap', problemCount: counts.beginner || 100 },
                 intermediate: { name: 'Intermediate Roadmap', problemCount: counts.intermediate || 150 },
-                advanced: { name: 'Advanced Roadmap', problemCount: counts.advanced || 200 }
+                advanced: { name: 'Advanced Roadmap', problemCount: counts.advanced || 200 },
+                dp_mastery: { name: 'DP Mastery Roadmap', problemCount: counts.dp_mastery || 75 }
             }
         });
     } catch (err) {
@@ -238,14 +246,23 @@ app.get('/api/tracks/status', authenticateToken, async (req, res) => {
 // --- 5. PROGRESS UPDATE API ---
 app.put('/api/progress/:problemId', authenticateToken, async (req, res) => {
     try {
+        const userId = req.user.userId || req.user.id;
+        const problemId = parseInt(req.params.problemId, 10);
         const { status, solved_date, revisions, time_min, pattern_notes, code_snippet } = req.body;
+
         await pool.query(`
             INSERT INTO user_progress (user_id, problem_id, status, solved_date, time_min, revisions, pattern_notes, code_snippet, updated_at)
             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, CURRENT_TIMESTAMP)
             ON CONFLICT (user_id, problem_id) DO UPDATE SET
-                status = EXCLUDED.status, solved_date = EXCLUDED.solved_date, time_min = EXCLUDED.time_min,
-                revisions = EXCLUDED.revisions, pattern_notes = EXCLUDED.pattern_notes, code_snippet = EXCLUDED.code_snippet, updated_at = CURRENT_TIMESTAMP
-        `, [req.user.userId, req.params.problemId, status || 'Todo', solved_date || null, time_min || 0, revisions || 0, pattern_notes || '', code_snippet || '']);
+                status = EXCLUDED.status, 
+                solved_date = EXCLUDED.solved_date, 
+                time_min = EXCLUDED.time_min,
+                revisions = EXCLUDED.revisions, 
+                pattern_notes = EXCLUDED.pattern_notes, 
+                code_snippet = EXCLUDED.code_snippet, 
+                updated_at = CURRENT_TIMESTAMP
+        `, [userId, problemId, status || 'Todo', solved_date || null, time_min || 0, revisions || 0, pattern_notes || '', code_snippet || '']);
+
         res.json({ success: true });
     } catch (err) {
         res.status(500).json({ error: err.message });
@@ -255,12 +272,13 @@ app.put('/api/progress/:problemId', authenticateToken, async (req, res) => {
 // --- 6. AI COACH APIS ---
 app.get('/api/coach/insights', authenticateToken, async (req, res) => {
     try {
+        const userId = req.user.userId || req.user.id;
         const track = (req.query.track || 'all').toLowerCase().trim();
         let whereClause = '';
-        let params = [req.user.userId];
+        let params = [userId];
 
         if (track !== 'all') {
-            whereClause = 'WHERE LOWER(COALESCE(p.track_level, \'beginner\')) = $2';
+            whereClause = 'WHERE LOWER(COALESCE(p.track_level, p.track, \'beginner\')) = $2';
             params.push(track);
         }
 
@@ -313,7 +331,7 @@ app.post('/api/auth/signup', async (req, res) => {
         const hash = bcrypt.hashSync(password, 10);
         const result = await pool.query(`INSERT INTO users (name, email, password_hash) VALUES ($1, $2, $3) RETURNING id`, [name, email, hash]);
         const userId = result.rows[0].id;
-        const token = jwt.sign({ userId, name, email }, JWT_SECRET, { expiresIn: '30d' });
+        const token = jwt.sign({ userId, id: userId, name, email }, JWT_SECRET, { expiresIn: '30d' });
         res.json({ token, user: { id: userId, name, email } });
     } catch (err) {
         res.status(400).json({ error: 'User already exists' });
@@ -328,7 +346,7 @@ app.post('/api/auth/login', async (req, res) => {
         if (!user || !bcrypt.compareSync(password, user.password_hash)) {
             return res.status(400).json({ error: 'Invalid credentials' });
         }
-        const token = jwt.sign({ userId: user.id, name: user.name, email: user.email }, JWT_SECRET, { expiresIn: '30d' });
+        const token = jwt.sign({ userId: user.id, id: user.id, name: user.name, email: user.email }, JWT_SECRET, { expiresIn: '30d' });
         res.json({ token, user: { id: user.id, name: user.name, email: user.email } });
     } catch (err) {
         res.status(500).json({ error: err.message });
