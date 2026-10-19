@@ -3,7 +3,7 @@ const XLSX = require('xlsx');
 const fs = require('fs');
 const path = require('path');
 
-// Configure PostgreSQL connection pool with SSL
+// Configure PostgreSQL connection pool
 const pool = new Pool({
     connectionString: process.env.DATABASE_URL,
     ssl: process.env.DATABASE_URL ? { rejectUnauthorized: false } : false
@@ -80,10 +80,10 @@ async function seedTierFile(filePath, defaultTrackSlug = 'beginner') {
             url = `https://leetcode.com/problems/${slug}/`;
         }
 
-        // Upsert problem safely matching on (name, track_level) to prevent ID collision
+        // Upsert problem using explicit separate parameters ($7, $8)
         await pool.query(`
             INSERT INTO problems (week, topic, name, difficulty, priority, url, track_level, track)
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $7)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
             ON CONFLICT (name, track_level) DO UPDATE SET
                 week = EXCLUDED.week,
                 topic = EXCLUDED.topic,
@@ -91,7 +91,7 @@ async function seedTierFile(filePath, defaultTrackSlug = 'beginner') {
                 priority = EXCLUDED.priority,
                 url = EXCLUDED.url,
                 track = EXCLUDED.track;
-        `, [week, topic, name, difficulty, priority, url, trackLevel]);
+        `, [week, topic, name, difficulty, priority, url, trackLevel, trackLevel]);
 
         imported++;
     }
