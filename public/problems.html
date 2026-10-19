@@ -164,7 +164,6 @@
             if (icon) icon.classList.toggle('rotate-180', expandedRows.has(id));
         }
 
-        // SMOOTH DEBOUNCED UPDATE (PREVENTS FOCUS LOSS & ROW COLLAPSE)
         function updateProgress(id, field, value) {
             const prob = problems.find(p => p.id === id);
             if (!prob) return;
@@ -175,17 +174,14 @@
                 if ((value === 'Solved' || value === 'Mastered') && !prob.solved_date) {
                     prob.solved_date = new Date().toISOString().split('T')[0];
                 }
-                // Status changes affect active filtering, so re-render table
                 renderTable();
             } else if (field === 'pattern_notes') {
-                // Update green indicator dot in DOM directly WITHOUT re-rendering the whole table
                 const dot = document.getElementById(`note-dot-${id}`);
                 if (dot) {
                     dot.classList.toggle('hidden', !(value && value.trim().length > 0));
                 }
             }
 
-            // Debounce API requests to backend
             if (saveDebounceTimers[id]) clearTimeout(saveDebounceTimers[id]);
             
             saveDebounceTimers[id] = setTimeout(() => {
@@ -234,12 +230,16 @@
                 return `
                 <tr class="hover:bg-slate-100 dark:hover:bg-obsidian-900/50 transition cursor-pointer" onclick="toggleExpand(${p.id})">
                     <td class="p-4 text-center font-mono text-slate-400 dark:text-slate-500">${idx + 1}</td>
-                    <td class="p-4 font-bold text-slate-900 dark:text-white">
-                        <div class="flex items-center gap-2">
-                            <span>${p.name}</span>
+                    
+                    <!-- CLICKABLE PROBLEM NAME DIRECT LINK TO LEETCODE -->
+                    <td class="p-4 font-bold text-slate-900 dark:text-white" onclick="event.stopPropagation()">
+                        <a href="${p.url || '#'}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-2 hover:text-emerald-500 transition-colors group/title">
+                            <span class="group-hover/title:underline">${p.name}</span>
+                            <i data-lucide="external-link" class="w-3.5 h-3.5 text-slate-400 group-hover/title:text-emerald-500 transition-colors"></i>
                             <span id="note-dot-${p.id}" class="w-2 h-2 rounded-full bg-emerald-500 shrink-0 ${hasNotes ? '' : 'hidden'}" title="Saved notes exist"></span>
-                        </div>
+                        </a>
                     </td>
+
                     <td class="p-4 text-slate-600 dark:text-slate-400">${p.topic}</td>
                     <td class="p-4">
                         <span class="px-2 py-0.5 rounded text-[10px] font-bold ${
