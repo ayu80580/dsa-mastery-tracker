@@ -212,95 +212,95 @@
         }
 
         function renderTable() {
-            const query = (document.getElementById('search').value || '').toLowerCase();
-            const statusFilter = document.getElementById('status-filter').value;
+    const query = (document.getElementById('search').value || '').toLowerCase();
+    const statusFilter = document.getElementById('status-filter').value;
 
-            const filtered = Array.isArray(problems) ? problems.filter(p => {
-                const matchesQuery = (p.name && p.name.toLowerCase().includes(query)) || 
-                                     (p.topic && p.topic.toLowerCase().includes(query)) ||
-                                     (p.pattern_notes && p.pattern_notes.toLowerCase().includes(query));
+    const filtered = Array.isArray(problems) ? problems.filter(p => {
+        const matchesQuery = (p.name && p.name.toLowerCase().includes(query)) || 
+                             (p.topic && p.topic.toLowerCase().includes(query)) ||
+                             (p.pattern_notes && p.pattern_notes.toLowerCase().includes(query));
 
-                const probStatus = p.status || 'Todo';
-                const matchesStatus = (statusFilter === 'all') || (probStatus === statusFilter);
+        const probStatus = p.status || 'Todo';
+        const matchesStatus = (statusFilter === 'all') || (probStatus === statusFilter);
 
-                return matchesQuery && matchesStatus;
-            }) : [];
+        return matchesQuery && matchesStatus;
+    }) : [];
 
-            document.getElementById('problem-count').innerText = `${filtered.length} Problems`;
+    document.getElementById('problem-count').innerText = `${filtered.length} Problems`;
 
-            const tbody = document.getElementById('problems-body');
-            if (filtered.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="8" class="p-8 text-center text-slate-500">No problems found matching status '${statusFilter}' on '${currentTrack}' track.</td></tr>`;
-                return;
-            }
+    const tbody = document.getElementById('problems-body');
+    if (filtered.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="8" class="p-8 text-center text-slate-500">No problems found matching status '${statusFilter}' on '${currentTrack}' track.</td></tr>`;
+        return;
+    }
 
-            tbody.innerHTML = filtered.map(p => {
-                const isExpanded = expandedRows.has(p.id);
-                const hasNotes = p.pattern_notes && p.pattern_notes.trim().length > 0;
+    // USE (p, idx) TO DISPLAY ROW NUMBERS (1, 2, 3...)
+    tbody.innerHTML = filtered.map((p, idx) => {
+        const isExpanded = expandedRows.has(p.id);
+        const hasNotes = p.pattern_notes && p.pattern_notes.trim().length > 0;
 
-                return `
-                <tr class="hover:bg-slate-100 dark:hover:bg-obsidian-900/50 transition cursor-pointer" onclick="toggleExpand(${p.id})">
-                    <td class="p-4 text-center font-mono text-slate-400 dark:text-slate-500">${p.id}</td>
-                    <td class="p-4 font-bold text-slate-900 dark:text-white">
-                        <div class="flex items-center gap-2">
-                            <span>${p.name}</span>
-                            <span id="note-dot-${p.id}" class="w-2 h-2 rounded-full bg-emerald-500 shrink-0 ${hasNotes ? '' : 'hidden'}" title="Saved notes exist"></span>
-                        </div>
-                    </td>
-                    <td class="p-4 text-slate-600 dark:text-slate-400">${p.topic}</td>
-                    <td class="p-4">
-                        <span class="px-2 py-0.5 rounded text-[10px] font-bold ${
-                            p.difficulty === 'Easy' ? 'bg-cyan-500/20 text-cyan-600 dark:text-cyan-300' :
-                            p.difficulty === 'Medium' ? 'bg-amber-500/20 text-amber-600 dark:text-amber-300' : 'bg-rose-500/20 text-rose-600 dark:text-rose-300'
-                        }">${p.difficulty}</span>
-                    </td>
-                    <td class="p-4" onclick="event.stopPropagation()">
-                        <select onchange="updateProgress(${p.id}, 'status', this.value)" class="bg-white dark:bg-obsidian-950 border border-slate-300 dark:border-obsidian-800 rounded-lg px-2.5 py-1 text-slate-900 dark:text-slate-200 text-xs outline-none focus:border-emerald-500">
-                            <option value="Todo" ${p.status === 'Todo' ? 'selected' : ''}>Todo</option>
-                            <option value="Hint-solved" ${p.status === 'Hint-solved' ? 'selected' : ''}>Hint-solved</option>
-                            <option value="Solved" ${p.status === 'Solved' ? 'selected' : ''}>Solved</option>
-                            <option value="Mastered" ${p.status === 'Mastered' ? 'selected' : ''}>Mastered</option>
-                        </select>
-                    </td>
-                    <td class="p-4 text-center" onclick="event.stopPropagation()">
-                        <div class="inline-flex items-center gap-1.5">
-                            <input type="number" min="0" max="5" value="${p.revisions || 0}" onchange="updateProgress(${p.id}, 'revisions', Math.min(5, Math.max(0, parseInt(this.value, 10) || 0)))" class="w-12 text-center bg-white dark:bg-obsidian-950 border border-slate-300 dark:border-obsidian-800 rounded-lg py-1 text-xs font-mono text-emerald-600 dark:text-emerald-400 font-bold outline-none focus:border-emerald-500">
-                            <span class="text-xs text-slate-400 font-mono">/5</span>
-                        </div>
-                    </td>
-                    <td class="p-4 text-center" onclick="event.stopPropagation()">
-                        <a href="${p.url || '#'}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500 hover:text-black font-extrabold text-xs transition-all whitespace-nowrap shadow-sm group">
-                            <span>Jump</span>
-                            <i data-lucide="external-link" class="w-3.5 h-3.5 shrink-0 transition-transform group-hover:translate-x-0.5"></i>
-                        </a>
-                    </td>
-                    <td class="p-4 text-center">
-                        <button onclick="event.stopPropagation(); toggleExpand(${p.id})" class="p-1.5 rounded-lg hover:bg-slate-200 dark:hover:bg-obsidian-800 text-slate-400 transition" title="Toggle Saved Notes">
-                            <i data-lucide="chevron-down" id="expand-icon-${p.id}" class="w-4 h-4 transition-transform ${isExpanded ? 'rotate-180' : ''}"></i>
-                        </button>
-                    </td>
-                </tr>
-                <tr id="expand-row-${p.id}" class="${isExpanded ? '' : 'hidden'} bg-slate-50 dark:bg-obsidian-900/40 border-b border-slate-200 dark:border-obsidian-800">
-                    <td colspan="8" class="p-4" onclick="event.stopPropagation()">
-                        <div class="glass-card p-4 rounded-2xl space-y-3">
-                            <div class="flex items-center justify-between">
-                                <label class="text-[11px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider flex items-center gap-2">
-                                    <i data-lucide="file-text" class="w-3.5 h-3.5"></i> Key Logic & Pattern Notes (${p.name})
-                                </label>
-                                <span class="text-[10px] text-slate-400 italic">Auto-saves on typing</span>
-                            </div>
-                            <textarea oninput="updateProgress(${p.id}, 'pattern_notes', this.value)" placeholder="Write key problem logic, invariants, or edge-case insights here..." class="w-full bg-white dark:bg-obsidian-950 border border-slate-300 dark:border-obsidian-800 rounded-xl p-3 text-xs text-slate-900 dark:text-slate-200 outline-none focus:border-emerald-500 h-24 transition-colors">${p.pattern_notes || ''}</textarea>
-                        </div>
-                    </td>
-                </tr>
-                `;
-            }).join('');
+        return `
+        <tr class="hover:bg-slate-100 dark:hover:bg-obsidian-900/50 transition cursor-pointer" onclick="toggleExpand(${p.id})">
+            <td class="p-4 text-center font-mono text-slate-400 dark:text-slate-500">${idx + 1}</td>
+            <td class="p-4 font-bold text-slate-900 dark:text-white">
+                <div class="flex items-center gap-2">
+                    <span>${p.name}</span>
+                    <span id="note-dot-${p.id}" class="w-2 h-2 rounded-full bg-emerald-500 shrink-0 ${hasNotes ? '' : 'hidden'}" title="Saved notes exist"></span>
+                </div>
+            </td>
+            <td class="p-4 text-slate-600 dark:text-slate-400">${p.topic}</td>
+            <td class="p-4">
+                <span class="px-2 py-0.5 rounded text-[10px] font-bold ${
+                    p.difficulty === 'Easy' ? 'bg-cyan-500/20 text-cyan-600 dark:text-cyan-300' :
+                    p.difficulty === 'Medium' ? 'bg-amber-500/20 text-amber-600 dark:text-amber-300' : 'bg-rose-500/20 text-rose-600 dark:text-rose-300'
+                }">${p.difficulty}</span>
+            </td>
+            <td class="p-4" onclick="event.stopPropagation()">
+                <select onchange="updateProgress(${p.id}, 'status', this.value)" class="bg-white dark:bg-obsidian-950 border border-slate-300 dark:border-obsidian-800 rounded-lg px-2.5 py-1 text-slate-900 dark:text-slate-200 text-xs outline-none focus:border-emerald-500">
+                    <option value="Todo" ${p.status === 'Todo' ? 'selected' : ''}>Todo</option>
+                    <option value="Hint-solved" ${p.status === 'Hint-solved' ? 'selected' : ''}>Hint-solved</option>
+                    <option value="Solved" ${p.status === 'Solved' ? 'selected' : ''}>Solved</option>
+                    <option value="Mastered" ${p.status === 'Mastered' ? 'selected' : ''}>Mastered</option>
+                </select>
+            </td>
+            <td class="p-4 text-center" onclick="event.stopPropagation()">
+                <div class="inline-flex items-center gap-1.5">
+                    <input type="number" min="0" max="5" value="${p.revisions || 0}" onchange="updateProgress(${p.id}, 'revisions', Math.min(5, Math.max(0, parseInt(this.value, 10) || 0)))" class="w-12 text-center bg-white dark:bg-obsidian-950 border border-slate-300 dark:border-obsidian-800 rounded-lg py-1 text-xs font-mono text-emerald-600 dark:text-emerald-400 font-bold outline-none focus:border-emerald-500">
+                    <span class="text-xs text-slate-400 font-mono">/5</span>
+                </div>
+            </td>
+            <td class="p-4 text-center" onclick="event.stopPropagation()">
+                <a href="${p.url || '#'}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500 hover:text-black font-extrabold text-xs transition-all whitespace-nowrap shadow-sm group">
+                    <span>Jump</span>
+                    <i data-lucide="external-link" class="w-3.5 h-3.5 shrink-0 transition-transform group-hover:translate-x-0.5"></i>
+                </a>
+            </td>
+            <td class="p-4 text-center">
+                <button onclick="event.stopPropagation(); toggleExpand(${p.id})" class="p-1.5 rounded-lg hover:bg-slate-200 dark:hover:bg-obsidian-800 text-slate-400 transition" title="Toggle Saved Notes">
+                    <i data-lucide="chevron-down" id="expand-icon-${p.id}" class="w-4 h-4 transition-transform ${isExpanded ? 'rotate-180' : ''}"></i>
+                </button>
+            </td>
+        </tr>
+        <tr id="expand-row-${p.id}" class="${isExpanded ? '' : 'hidden'} bg-slate-50 dark:bg-obsidian-900/40 border-b border-slate-200 dark:border-obsidian-800">
+            <td colspan="8" class="p-4" onclick="event.stopPropagation()">
+                <div class="glass-card p-4 rounded-2xl space-y-3">
+                    <div class="flex items-center justify-between">
+                        <label class="text-[11px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider flex items-center gap-2">
+                            <i data-lucide="file-text" class="w-3.5 h-3.5"></i> Key Logic & Pattern Notes (${p.name})
+                        </label>
+                        <span class="text-[10px] text-slate-400 italic">Auto-saves on typing</span>
+                    </div>
+                    <textarea oninput="updateProgress(${p.id}, 'pattern_notes', this.value)" placeholder="Write key problem logic, invariants, or edge-case insights here..." class="w-full bg-white dark:bg-obsidian-950 border border-slate-300 dark:border-obsidian-800 rounded-xl p-3 text-xs text-slate-900 dark:text-slate-200 outline-none focus:border-emerald-500 h-24 transition-colors">${p.pattern_notes || ''}</textarea>
+                </div>
+            </td>
+        </tr>
+        `;
+    }).join('');
 
-            if (window.lucide && typeof lucide.createIcons === 'function') {
-                lucide.createIcons();
-            }
-        }
-
+    if (window.lucide && typeof lucide.createIcons === 'function') {
+        lucide.createIcons();
+    }
+}
         loadProblems();
     </script>
 </body>
