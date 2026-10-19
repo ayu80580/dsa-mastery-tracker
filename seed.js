@@ -3,7 +3,7 @@ const XLSX = require('xlsx');
 const fs = require('fs');
 const path = require('path');
 
-// Configure PostgreSQL connection pool
+// Configure PostgreSQL connection pool with explicit SSL settings
 const pool = new Pool({
     connectionString: process.env.DATABASE_URL,
     ssl: process.env.DATABASE_URL ? { rejectUnauthorized: false } : false
@@ -80,7 +80,7 @@ async function seedTierFile(filePath, defaultTrackSlug = 'beginner') {
             url = `https://leetcode.com/problems/${slug}/`;
         }
 
-        // Upsert problem using explicit separate parameters ($7, $8)
+        // Upsert problem safely without manually assigning 'id'
         await pool.query(`
             INSERT INTO problems (week, topic, name, difficulty, priority, url, track_level, track)
             VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
@@ -141,7 +141,15 @@ async function seedAll() {
             );
         `);
 
-        // 2. Explicitly alter pre-existing tables to add any missing columns safely
+        // 2. Attach auto-increment sequence to 'problems.id' if pre-existing table lacks SERIAL
+        await pool.query(`
+            CREATE SEQUENCE IF NOT EXISTS problems_id_seq;
+            ALTER TABLE problems ALTER COLUMN id SET DEFAULT nextval('problems_id_seq');
+            ALTER SEQUENCE problems_id_seq OWNED BY problems.id;
+            SELECT setval('problems_id_seq', COALESCE((SELECT MAX(id) FROM problems), 0) + 1, false);
+        `);
+
+        // 3. Explicitly alter pre-existing tables to add any missing columns safely
         await pool.query(`
             ALTER TABLE problems ADD COLUMN IF NOT EXISTS url TEXT;
             ALTER TABLE problems ADD COLUMN IF NOT EXISTS track_level TEXT DEFAULT 'beginner';
@@ -154,7 +162,7 @@ async function seedAll() {
             ALTER TABLE user_progress ADD COLUMN IF NOT EXISTS time_min INT DEFAULT 0;
         `);
 
-        // 3. Ensure unique constraint exists on problems (name, track_level)
+        // 4. Ensure unique constraint exists on problems (name, track_level)
         await pool.query(`
             DO $$
             BEGIN
@@ -166,7 +174,7 @@ async function seedAll() {
             END $$;
         `);
 
-        // 4. Scan directory for all .xlsx files
+        // 5. Scan directory for all .xlsx files
         const rootFiles = fs.readdirSync(__dirname).filter(f => f.endsWith('.xlsx') && !f.startsWith('~$'));
 
         for (const file of rootFiles) {
