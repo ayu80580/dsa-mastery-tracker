@@ -105,6 +105,7 @@
         let problems = [];
         let currentTrack = new URLSearchParams(window.location.search).get('track') || 'beginner';
         let expandedRows = new Set();
+        let saveDebounceTimers = {};
 
         function updateTabHighlight() {
             ['beginner', 'intermediate', 'advanced', 'dp_mastery'].forEach(t => {
@@ -163,33 +164,44 @@
             if (icon) icon.classList.toggle('rotate-180', expandedRows.has(id));
         }
 
-        // Instant Real-Time UI Filter Update
+        // SMOOTH DEBOUNCED UPDATE (PREVENTS FOCUS LOSS & ROW COLLAPSE)
         function updateProgress(id, field, value) {
             const prob = problems.find(p => p.id === id);
             if (!prob) return;
 
             prob[field] = value;
 
-            if (field === 'status' && (value === 'Solved' || value === 'Mastered') && !prob.solved_date) {
-                prob.solved_date = new Date().toISOString().split('T')[0];
+            if (field === 'status') {
+                if ((value === 'Solved' || value === 'Mastered') && !prob.solved_date) {
+                    prob.solved_date = new Date().toISOString().split('T')[0];
+                }
+                // Status changes affect active filtering, so re-render table
+                renderTable();
+            } else if (field === 'pattern_notes') {
+                // Update green indicator dot in DOM directly WITHOUT re-rendering the whole table
+                const dot = document.getElementById(`note-dot-${id}`);
+                if (dot) {
+                    dot.classList.toggle('hidden', !(value && value.trim().length > 0));
+                }
             }
 
-            // Immediately re-filter UI table without full network reload
-            renderTable();
-
-            // Background async sync to server
-            fetch(`/api/progress/${id}`, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${jwtToken}` },
-                body: JSON.stringify({
-                    status: prob.status,
-                    solved_date: prob.solved_date,
-                    time_min: prob.time_min || 0,
-                    revisions: parseInt(prob.revisions || 0, 10),
-                    pattern_notes: prob.pattern_notes || '',
-                    code_snippet: prob.code_snippet || ''
-                })
-            }).catch(err => console.error("Progress save failed:", err));
+            // Debounce API requests to backend
+            if (saveDebounceTimers[id]) clearTimeout(saveDebounceTimers[id]);
+            
+            saveDebounceTimers[id] = setTimeout(() => {
+                fetch(`/api/progress/${id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${jwtToken}` },
+                    body: JSON.stringify({
+                        status: prob.status,
+                        solved_date: prob.solved_date,
+                        time_min: prob.time_min || 0,
+                        revisions: parseInt(prob.revisions || 0, 10),
+                        pattern_notes: prob.pattern_notes || '',
+                        code_snippet: prob.code_snippet || ''
+                    })
+                }).catch(err => console.error("Progress save failed:", err));
+            }, field === 'pattern_notes' ? 600 : 0);
         }
 
         function renderTable() {
@@ -268,7 +280,7 @@
                                 <label class="text-[11px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider flex items-center gap-2">
                                     <i data-lucide="file-text" class="w-3.5 h-3.5"></i> Key Logic & Pattern Notes (${p.name})
                                 </label>
-                                <span class="text-[10px] text-slate-400 italic">Auto-saves on typing</span>
+                                <span class="text-[10px] text-slate-400 italic">Auto-saves seamlessly on typing</span>
                             </div>
                             <textarea oninput="updateProgress(${p.id}, 'pattern_notes', this.value)" placeholder="Write key problem logic, invariants, or edge-case insights here..." class="w-full bg-white dark:bg-obsidian-950 border border-slate-300 dark:border-obsidian-800 rounded-xl p-3 text-xs text-slate-900 dark:text-slate-200 outline-none focus:border-emerald-500 h-24 transition-colors">${p.pattern_notes || ''}</textarea>
                         </div>
